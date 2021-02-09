@@ -1,0 +1,16 @@
+{
+   "name": "Golang dev environment",
+   "dockerFile": "Dockerfile",
+   "runArgs": [ "-e TZ=Europe/Zurich" ],
+   "forwardPorts": [8200],
+   "postCreateCommand": "bash ./.devcontainer/install_dev_tools.bash",
+   "settings": {
+      "workbench.colorTheme": "Slack Theme Dark Mode",
+      "terminal.integrated.shell.linux": "/bin/bash"
+   },
+   "extensions": [
+     "golang.go",
+     "felipe-mendes.slack-theme",
+     "zxh404.vscode-proto3"
+   ]
+}
