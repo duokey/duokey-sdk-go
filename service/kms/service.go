@@ -1,7 +1,7 @@
 package kms
 
 import (
-	"github.com/duokey/duokey-kms-go/duokey/client"
+	"github.com/duokey/duokey-sdk-go/duokey/client"
 )
 
 // KMS implements the KMSAPI interface
