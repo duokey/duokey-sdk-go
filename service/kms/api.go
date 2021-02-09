@@ -2,7 +2,7 @@ package kms
 
 import (
 	_ "encoding/json"
-	"github.com/duokey-kms/duokey"
+	"github.com/duokey/duokey-sdk/duokey"
 )
 
 type EncryptRequest struct {
