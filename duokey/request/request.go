@@ -11,10 +11,12 @@ import (
 
 	"github.com/duokey/duokey-sdk-go/duokey"
 	"github.com/pkg/errors"
+	"golang.org/x/oauth2"
 )
 
 // Request ...
 type Request struct {
+	Token *oauth2.Token
 	HTTPClient   *http.Client
 	HTTPRequest  *http.Request
 	HTTPResponse *http.Response
@@ -34,7 +36,7 @@ type Operation struct {
 // func NewRequestWithContext(ctx context.Context, method, url string, body io.Reader) (*Request, error)
 
 // New ...
-func New(config duokey.Config, operation *Operation, params interface{}, data interface{}) *Request {
+func New(config duokey.Config, token *oauth2.Token, operation *Operation, params interface{}, data interface{}) *Request {
 
 	var method string
 	switch operation.HTTPMethod {

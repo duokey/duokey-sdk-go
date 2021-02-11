@@ -15,6 +15,7 @@ import (
 // Client ...
 type Client struct {
 	Config duokey.Config
+	Token *oauth2.Token
 }
 
 // New will return a pointer to a new initialized service client.
@@ -49,11 +50,14 @@ func New(config duokey.Config) (*Client, error) {
 		return nil, fmt.Errorf("bad token: expected 'Bearer', got '%s'", token.TokenType)
 	}
 
-	return nil, nil
+	client := &Client{Config: config}
+	client.Token = token
+
+	return client, nil
 }
 
 // NewRequest ...
 func (c *Client) NewRequest(operation *request.Operation, params interface{}, data interface{}) *request.Request {
 
-	return request.New(c.Config, operation, params, data)
+	return request.New(c.Config, c.Token, operation, params, data)
 }
