@@ -1,40 +1,84 @@
 package vault
 
-import "context"
+import (
+	"context"
+	"net/http"
+
+	"github.com/duokey/duokey-sdk-go/duokey/request"
+)
+
+// SealInput ...
+type SealInput struct {
+	// KeyID
+	KeyID string `json:"keyid"`
+	Plaintext []byte `json:"plain"`
+}
+
+// SealOutput ...
+type SealOutput struct {
+	Ciphertext []byte `json:"cipher"`
+}
+
+// UnsealInput ...
+type UnsealInput struct {
+	Ciphertext []byte `json:"cipher"`
+}
+
+// UnsealOutput ...
+type UnsealOutput struct {
+	Plaintext []byte `json:"plain"`
+}
+
+const opSeal = "Seal"
 
 // SealRequest ...
-type SealRequest struct {
-	// KeyID
-	// TenantID -> to be copied into the header
-	
-	Plaintext []byte `json:"plain"`
-}
+func (v *Vault) SealRequest(ctx context.Context, input *SealInput) (req *request.Request, output *SealOutput) {
 
-// SealResponse ...
-type SealResponse struct {
-	Ciphertext []byte `json:"cipher"`
-}
+	op := &request.Operation{
+		Name: opSeal,
+		HTTPMethod: http.MethodPost,
+		HTTPPath: "/",
+	}
 
-// UnsealRequest ...
-type UnsealRequest struct {
-	Ciphertext []byte `json:"cipher"`
-}
+	if (input == nil) {
+		input = &SealInput{}
+	}
 
-// UnsealResponse ...
-type UnsealResponse struct {
-	Plaintext []byte `json:"plain"`
+	output = &SealOutput{}
+	req = v.newRequest(op, input, output)
+
+	return 
 }
 
 // Seal ...
-func (k *Vault) Seal(ctx context.Context, req *SealRequest) (*SealResponse, error) {
-	return nil, nil
+func (v *Vault) Seal(input *SealInput) (*SealOutput, error) {
+	req, out := v.SealRequest(context.Background(), input)
 
-	// Send
+	return out, req.Send()
+}
 
-	// Get the ciphertext
+const opUnseal = "Unseal"
+
+// UnsealRequest ...
+func (v *Vault) UnsealRequest(ctx context.Context, input *UnsealInput) (req *request.Request, output *UnsealOutput) {
+
+	op := &request.Operation{
+		Name: opUnseal,
+		HTTPMethod: http.MethodPost,
+		HTTPPath: "/",
+	}
+
+	if (input == nil) {
+		input = &UnsealInput{}
+	}
+
+	output = &UnsealOutput{}
+	req = v.newRequest(op, input, output)
+
+	return 
 }
 
 // Unseal ...
-func (k *Vault) Unseal(ctx context.Context, req *UnsealRequest) (*UnsealResponse, error) {
+func (v *Vault) Unseal(input *UnsealInput) (*UnsealOutput, error) {
 	return nil, nil
 }

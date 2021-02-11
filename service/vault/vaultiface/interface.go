@@ -1,15 +1,13 @@
 package vaultiface
 
 import (
-	"context"
-
 	"github.com/duokey/duokey-sdk-go/service/vault"
 )
 
 // VaultAPI ...
 type VaultAPI interface {
-	Seal(context.Context, *vault.SealRequest) (*vault.SealResponse, error)
-	Unseal(context.Context, *vault.UnsealRequest) (*vault.UnsealResponse, error)
+	Seal(*vault.SealInput) (*vault.SealOutput, error)
+	Unseal(*vault.UnsealInput) (*vault.UnsealOutput, error)
 } 
 
 // Ensure that Vault implements the VaultAPI interface

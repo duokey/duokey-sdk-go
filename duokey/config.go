@@ -6,6 +6,7 @@ import (
 
 // Config ...
 type Config struct {
+	// TenantID must be copied into the header of each request
 	TenantID uint32
 	Endpoint string
 
