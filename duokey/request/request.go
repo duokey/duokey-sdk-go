@@ -33,10 +33,6 @@ type Operation struct {
 // https://golang.org/pkg/net/http/#NewRequest
 // func NewRequestWithContext(ctx context.Context, method, url string, body io.Reader) (*Request, error)
 
-// func (c *Client) NewRequest(operation *request.Operation, params interface{}, data interface{}) *request.Request {
-//	return request.New(c.Config, c.ClientInfo, c.Handlers, c.Retryer, operation, params, data)
-//}
-
 // New ...
 func New(config duokey.Config, operation *Operation, params interface{}, data interface{}) *Request {
 
@@ -100,7 +96,9 @@ func parseHTTPResponse(resp *http.Response, response interface{}) error {
 	var payload []byte
 	var err error
 
-	// TODO: check error code (resp.StatusCode)
+	if resp.StatusCode >= 300 {
+		return fmt.Errorf("request failed with status %d", resp.StatusCode)
+	}
 
 	if payload, err = ioutil.ReadAll(resp.Body); err != nil {
 		return errors.Wrap(err, "failed to read response body")
