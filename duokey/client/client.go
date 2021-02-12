@@ -15,16 +15,16 @@ import (
 // Client ...
 type Client struct {
 	Config duokey.Config
-	Token *oauth2.Token
+	//Config *oauth2.Config
+	//Token *oauth2.Token
+	//HTTPClient *http.Client
 }
 
-// New will return a pointer to a new initialized service client.
-//func New(cfg aws.Config, info metadata.ClientInfo, handlers request.Handlers, options ...func(*Client)) *Client {
 
 // New returns a pointer to a new DuoKey client	
-func New(config duokey.Config) (*Client, error) {
+func New(config credentials.Config) (*Client, error) {
 
-	conf, err := credentials.GetOauth2Config(config)
+	oauth2Config, err := credentials.GetOauth2Config(config)
 	if err != nil {
 		return nil, err
 	}
@@ -36,7 +36,7 @@ func New(config duokey.Config) (*Client, error) {
 	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, httpClient)
 
 	// Password credentials call
-	token, err := conf.PasswordCredentialsToken(ctx, "admin", "123qwe")
+	token, err := oauth2Config.PasswordCredentialsToken(ctx, config.UserName, config.Password)
 	if err != nil {
 		return nil, err
 	}
@@ -50,8 +50,8 @@ func New(config duokey.Config) (*Client, error) {
 		return nil, fmt.Errorf("bad token: expected 'Bearer', got '%s'", token.TokenType)
 	}
 
-	client := &Client{Config: config}
-	client.Token = token
+	clientConfig := duokey.Config{Credentials: config, HTTPClient: oauth2Config.Client(context.Background(), token)}
+	client := &Client{Config: clientConfig}
 
 	return client, nil
 }
@@ -59,5 +59,5 @@ func New(config duokey.Config) (*Client, error) {
 // NewRequest ...
 func (c *Client) NewRequest(operation *request.Operation, params interface{}, data interface{}) *request.Request {
 
-	return request.New(c.Config, c.Token, operation, params, data)
+	return request.New(c.Config, operation, params, data)
 }

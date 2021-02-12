@@ -6,9 +6,20 @@ import (
 	"net/http"
 
 	"github.com/coreos/go-oidc/v3/oidc"
-	"github.com/duokey/duokey-sdk-go/duokey"
 	"golang.org/x/oauth2"
 )
+
+// Config ...
+type Config struct {
+	Issuer string
+	ClientID string
+	ClientSecret string
+	UserName string
+	Password string
+	Scope string
+	TenantID uint32
+	Endpoint string
+}
 
 // DuoKeyTransport ...
 type DuoKeyTransport struct {
@@ -22,7 +33,7 @@ func (t *DuoKeyTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 }
 
 // GetOauth2Config reads the token and authorization URLs from a discovery document
-func GetOauth2Config(config duokey.Config) (*oauth2.Config, error) {
+func GetOauth2Config(config Config) (*oauth2.Config, error) {
 	provider, err := oidc.NewProvider(context.Background(), config.Issuer)
 	if err != nil {
 		return nil, err

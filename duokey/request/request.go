@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"path"
 
 	"github.com/duokey/duokey-sdk-go/duokey"
 	"github.com/pkg/errors"
@@ -36,7 +35,7 @@ type Operation struct {
 // func NewRequestWithContext(ctx context.Context, method, url string, body io.Reader) (*Request, error)
 
 // New ...
-func New(config duokey.Config, token *oauth2.Token, operation *Operation, params interface{}, data interface{}) *Request {
+func New(config duokey.Config, operation *Operation, params interface{}, data interface{}) *Request {
 
 	var method string
 	switch operation.HTTPMethod {
@@ -48,7 +47,7 @@ func New(config duokey.Config, token *oauth2.Token, operation *Operation, params
 
 	httpReq, _ := http.NewRequest(method, "", nil)
 
-	rawurl := path.Join(config.Endpoint, operation.HTTPPath)
+	rawurl := config.Credentials.Endpoint + operation.HTTPPath
 
 	var err error
 	httpReq.URL, err = url.Parse(rawurl)
@@ -56,6 +55,8 @@ func New(config duokey.Config, token *oauth2.Token, operation *Operation, params
 		httpReq.URL = &url.URL{}
 		err = fmt.Errorf("InvalidEndpointURL (%s)", rawurl)
 	}
+
+	httpReq.Header.Set("Abp.TenantId", fmt.Sprint(config.Credentials.TenantID))
 
 	r := &Request{
 		HTTPClient:  config.HTTPClient,
@@ -105,6 +106,8 @@ func parseHTTPResponse(resp *http.Response, response interface{}) error {
 	if payload, err = ioutil.ReadAll(resp.Body); err != nil {
 		return errors.Wrap(err, "failed to read response body")
 	}
+
+	fmt.Println("#######" + string([]byte(payload)))
 
 	if err = json.NewDecoder(bytes.NewReader(payload)).Decode(response); err != nil {
 		return errors.Wrap(err, "failed to decode response body")

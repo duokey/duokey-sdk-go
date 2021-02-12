@@ -10,7 +10,7 @@ import (
 // SealInput ...
 type SealInput struct {
 	// KeyID
-	KeyID string `json:"keyid"`
+	KeyID     string `json:"keyid"`
 	Plaintext []byte `json:"plain"`
 }
 
@@ -35,19 +35,19 @@ const opSeal = "Seal"
 func (v *Vault) SealRequest(ctx context.Context, input *SealInput) (req *request.Request, output *SealOutput) {
 
 	op := &request.Operation{
-		Name: opSeal,
+		Name:       opSeal,
 		HTTPMethod: http.MethodPost,
-		HTTPPath: "/",
+		HTTPPath:   "/api/services/app/Keys/GetKeyId",
 	}
 
-	if (input == nil) {
+	if input == nil {
 		input = &SealInput{}
 	}
 
 	output = &SealOutput{}
 	req = v.newRequest(op, input, output)
 
-	return 
+	return
 }
 
 // Seal ...
@@ -63,19 +63,19 @@ const opUnseal = "Unseal"
 func (v *Vault) UnsealRequest(ctx context.Context, input *UnsealInput) (req *request.Request, output *UnsealOutput) {
 
 	op := &request.Operation{
-		Name: opUnseal,
+		Name:       opUnseal,
 		HTTPMethod: http.MethodPost,
-		HTTPPath: "/",
+		HTTPPath:   "/",
 	}
 
-	if (input == nil) {
+	if input == nil {
 		input = &UnsealInput{}
 	}
 
 	output = &UnsealOutput{}
 	req = v.newRequest(op, input, output)
 
-	return 
+	return
 }
 
 // Unseal ...
