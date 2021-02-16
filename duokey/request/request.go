@@ -15,7 +15,7 @@ import (
 
 // Request ...
 type Request struct {
-	Token *oauth2.Token
+	Token        *oauth2.Token
 	HTTPClient   *http.Client
 	HTTPRequest  *http.Request
 	HTTPResponse *http.Response
@@ -39,7 +39,10 @@ func New(config duokey.Config, operation *Operation, params interface{}, data in
 
 	var method string
 	switch operation.HTTPMethod {
-	case http.MethodGet:
+	case http.MethodDelete, 
+		http.MethodGet,
+		http.MethodPost,
+		http.MethodPut:
 		method = operation.HTTPMethod
 	default:
 		method = http.MethodPost
@@ -47,7 +50,7 @@ func New(config duokey.Config, operation *Operation, params interface{}, data in
 
 	httpReq, _ := http.NewRequest(method, "", nil)
 
-	rawurl := config.Credentials.Endpoint + operation.HTTPPath
+	rawurl := config.Routes.BasePath + operation.HTTPPath
 
 	var err error
 	httpReq.URL, err = url.Parse(rawurl)
@@ -107,7 +110,7 @@ func parseHTTPResponse(resp *http.Response, response interface{}) error {
 		return errors.Wrap(err, "failed to read response body")
 	}
 
-	fmt.Println("#######" + string([]byte(payload)))
+	//fmt.Println("#######" + string([]byte(payload)))
 
 	if err = json.NewDecoder(bytes.NewReader(payload)).Decode(response); err != nil {
 		return errors.Wrap(err, "failed to decode response body")

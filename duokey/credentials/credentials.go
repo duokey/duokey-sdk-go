@@ -2,34 +2,21 @@ package credentials
 
 import (
 	"context"
-	"fmt"
-	"net/http"
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"golang.org/x/oauth2"
 )
 
-// Config ...
+// Config stores the user's credentials
 type Config struct {
-	Issuer string
-	ClientID string
+	Issuer       string // URL identifier for the service
+	ClientID     string
 	ClientSecret string
-	UserName string
-	Password string
-	Scope string
-	TenantID uint32
-	Endpoint string
-}
-
-// DuoKeyTransport ...
-type DuoKeyTransport struct {
-	TenantID uint32
-}
-
-// RoundTrip ...
-func (t *DuoKeyTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	req.Header.Set("Abp.TenantId", fmt.Sprint(t.TenantID))
-	return http.DefaultTransport.RoundTrip(req)
+	VaultID      string
+	UserName     string
+	Password     string
+	Scope        string
+	TenantID     uint32
 }
 
 // GetOauth2Config reads the token and authorization URLs from a discovery document
