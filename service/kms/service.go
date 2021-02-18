@@ -12,7 +12,7 @@ type KMS struct {
 	*client.Client
 }
 
-// New ...
+// New checks the credentials and returns a KMS client.
 func New(credentials credentials.Config, routes restapi.Config) (*KMS, error) {
 	client, err := client.New(credentials, routes)
 	if err != nil {

@@ -31,10 +31,10 @@ type Operation struct {
 	HTTPPath   string
 }
 
-// https://golang.org/pkg/net/http/#NewRequest
-// func NewRequestWithContext(ctx context.Context, method, url string, body io.Reader) (*Request, error)
-
-// New ...
+// New returns a pointer to a request.
+// Params contains the input parameters needed to build the request body.
+// Data is pointer value to an object which the request's response
+// payload will be deserialized to.
 func New(config duokey.Config, operation *Operation, params interface{}, data interface{}) *Request {
 
 	var method string
@@ -72,7 +72,9 @@ func New(config duokey.Config, operation *Operation, params interface{}, data in
 	return r
 }
 
-// Send ...
+// Send transmits the request to a DuoKey server and returns an error if an 
+// unexpected issue is encountered. The deserialized response can be found in 
+// r.Data.
 func (r *Request) Send() error {
 
 	body := &bytes.Buffer{}
@@ -109,8 +111,6 @@ func parseHTTPResponse(resp *http.Response, response interface{}) error {
 	if payload, err = ioutil.ReadAll(resp.Body); err != nil {
 		return errors.Wrap(err, "failed to read response body")
 	}
-
-	//fmt.Println("#######" + string([]byte(payload)))
 
 	if err = json.NewDecoder(bytes.NewReader(payload)).Decode(response); err != nil {
 		return errors.Wrap(err, "failed to decode response body")

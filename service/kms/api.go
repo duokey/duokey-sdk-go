@@ -7,7 +7,10 @@ import (
 	"github.com/duokey/duokey-sdk-go/duokey/request"
 )
 
-// EncryptInput ...
+// EncryptInput contains a plaintext to be encrypted by DuoKey. DuoKey determines the encryption 
+// algorithm from the VaultID and KeyId. The optional field Algorithm allows you to specify a 
+// chaining mode or a padding scheme. An initial vector or a tag can be supplied using the 
+// Context field.
 type EncryptInput struct {
 	KeyID     string             `json:"keyid"`
 	VaultID   string             `json:"vaultid"`
@@ -16,14 +19,14 @@ type EncryptInput struct {
 	Plaintext []byte             `json:"plain"`
 }
 
-// EncryptOutput ...
+// EncryptOutput contains the deserialized payload returned by the DuoKey server.
 type EncryptOutput struct {
 	KeyID      string `json:"keyid"`
 	Algorithm  string `json:"algorithm,omitempty"`
 	Ciphertext []byte `json:"cipher"`
 }
 
-// DecryptInput specifies
+// DecryptInput contains a ciphertext to be decrypted by DuoKey.
 type DecryptInput struct {
 	KeyID      string             `json:"keyid"`
 	VaultID    string             `json:"vaultid"`
@@ -32,7 +35,7 @@ type DecryptInput struct {
 	Ciphertext []byte             `json:"cipher"`
 }
 
-// DecryptOutput ...
+// DecryptOutput contains the deserialized payload returned by the DuoKey server.
 type DecryptOutput struct {
 	KeyID     string `json:"keyid"`
 	Algorithm string `json:"algorithm,omitempty"`

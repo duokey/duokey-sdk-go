@@ -17,7 +17,8 @@ const (
 	httpClientTimeout time.Duration = time.Second * 10
 )
 
-// Client ...
+// Client implements the base client request and response handling. All 
+// services rely on this client.
 type Client struct {
 	Config duokey.Config
 }
@@ -27,9 +28,10 @@ type duoKeyTransport struct {
 }
 
 // RoundTrip adds the tenant ID to the PasswordCredentialsToken request.
-// Remark: we shouln't mutate a request this way. However the context of 
-// PasswordCredentialsToken controls only which HTTP client is used
-// (see https://github.com/golang/oauth2/blob/66670185b0cdf83286f736c2e4cdced4d9cb6170/internal/transport.go#L23) 
+// Remark: we shouln't mutate a request this way. However, it seems that it's the
+// only solution to modify the header when calling PasswordCredentialsToken (see
+// https://developer20.com/add-header-to-every-request-in-go/ and
+// https://rakyll.medium.com/context-propagation-over-http-in-go-d4540996e9b0).
 func (t *duoKeyTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	req.Header.Set("Abp.TenantId", fmt.Sprint(t.TenantID))
 	return http.DefaultTransport.RoundTrip(req)
@@ -66,12 +68,6 @@ func New(creds credentials.Config, routes restapi.Config) (*Client, error) {
 		return nil, fmt.Errorf("bad token: expected 'Bearer', got '%s'", token.TokenType)
 	}
 
-	// fmt.Println("Refresh token:")
-	// fmt.Println(token.Expiry.String())
-	// fmt.Println(token.AccessToken)
-
-	// token.AccessToken = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjYwM0ExQUZEN0QwRUU0RDAzNzc3NDJGMTgwODI0RjAyIiwidHlwIjoiYXQrand0In0.eyJuYmYiOjE2MTMxMjcwMzQsImV4cCI6MTYxMzEzMDYzNCwiaXNzIjoiaHR0cHM6Ly9kdW9rZXktY29ja3BpdC5henVyZXdlYnNpdGVzLm5ldCIsImF1ZCI6ImRlZmF1bHQtYXBpIiwiY2xpZW50X2lkIjoiZGtlLmNvY2twaXQiLCJzdWIiOiIyIiwiYXV0aF90aW1lIjoxNjEzMTI3MDM0LCJpZHAiOiJsb2NhbCIsImh0dHA6Ly93d3cuYXNwbmV0Ym9pbGVycGxhdGUuY29tL2lkZW50aXR5L2NsYWltcy90ZW5hbnRJZCI6IjEiLCJqdGkiOiIwRDNGNTE4NDgzQkI2NEU2NzY2NjNFRTdBNDg0MUJDQyIsImlhdCI6MTYxMzEyNzAzNCwic2NvcGUiOlsiZGVmYXVsdC1hcGkiXSwiYW1yIjpbInB3ZCJdfQ.tjTuOMAWxpTfDYy52ebF8gLhw2huTDvfVVFJ6hiiRH5321Zmro9gOfsc0APCw9kjikgv7c8NFcJpkMsjesIF8xjuIv0ss-3jpo-PY05cMk9ZnxVLGtBvZ4-rVwyKOGe3TB_PENLxHgw1mueRkUCXZ-ny1tUqHA6cRDzV193LlTWSlSZ3VAJEURyK-_QgGv4e5dgjHs7xQ9--qMSn6oPnlAbhS-9hzqCX8WYttfuG-NkN61waPhhUzHDai2iCapTXKpWbjQ59gfmU9VMXnTNJVLO_kaYIDN00oD-Ooo4-gR5t0_LFRlmBiH4pEgEOZ_f13EWJSatcQ3Qt_rKCvgiMtA"
-
 	ctx, cancel := context.WithTimeout(context.Background(), httpClientTimeout)
 	defer cancel()
 
@@ -83,10 +79,8 @@ func New(creds credentials.Config, routes restapi.Config) (*Client, error) {
 	return client, nil
 }
 
-// NewRequest ...
+// NewRequest returns a request pointer, The tenant ID is added to the http header.  
 func (c *Client) NewRequest(operation *request.Operation, params interface{}, data interface{}) *request.Request {
 
 	return request.New(c.Config, operation, params, data)
 }
-
-// eyJhbGciOiJSUzI1NiIsImtpZCI6IjYwM0ExQUZEN0QwRUU0RDAzNzc3NDJGMTgwODI0RjAyIiwidHlwIjoiYXQrand0In0.eyJuYmYiOjE2MTMxMjcwMzQsImV4cCI6MTYxMzEzMDYzNCwiaXNzIjoiaHR0cHM6Ly9kdW9rZXktY29ja3BpdC5henVyZXdlYnNpdGVzLm5ldCIsImF1ZCI6ImRlZmF1bHQtYXBpIiwiY2xpZW50X2lkIjoiZGtlLmNvY2twaXQiLCJzdWIiOiIyIiwiYXV0aF90aW1lIjoxNjEzMTI3MDM0LCJpZHAiOiJsb2NhbCIsImh0dHA6Ly93d3cuYXNwbmV0Ym9pbGVycGxhdGUuY29tL2lkZW50aXR5L2NsYWltcy90ZW5hbnRJZCI6IjEiLCJqdGkiOiIwRDNGNTE4NDgzQkI2NEU2NzY2NjNFRTdBNDg0MUJDQyIsImlhdCI6MTYxMzEyNzAzNCwic2NvcGUiOlsiZGVmYXVsdC1hcGkiXSwiYW1yIjpbInB3ZCJdfQ.tjTuOMAWxpTfDYy52ebF8gLhw2huTDvfVVFJ6hiiRH5321Zmro9gOfsc0APCw9kjikgv7c8NFcJpkMsjesIF8xjuIv0ss-3jpo-PY05cMk9ZnxVLGtBvZ4-rVwyKOGe3TB_PENLxHgw1mueRkUCXZ-ny1tUqHA6cRDzV193LlTWSlSZ3VAJEURyK-_QgGv4e5dgjHs7xQ9--qMSn6oPnlAbhS-9hzqCX8WYttfuG-NkN61waPhhUzHDai2iCapTXKpWbjQ59gfmU9VMXnTNJVLO_kaYIDN00oD-Ooo4-gR5t0_LFRlmBiH4pEgEOZ_f13EWJSatcQ3Qt_rKCvgiMtA
