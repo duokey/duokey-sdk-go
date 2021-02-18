@@ -2,6 +2,7 @@ package request
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -22,6 +23,8 @@ type Request struct {
 	Error        error
 	Parameters   interface{}
 	Data         interface{}
+
+	context 	context.Context
 }
 
 // Operation (GET, POST)
@@ -117,4 +120,13 @@ func parseHTTPResponse(resp *http.Response, response interface{}) error {
 	}
 
 	return nil
+}
+
+// SetContext adds a context to a request.
+func (r* Request) SetContext(ctx context.Context) {
+	if ctx == nil {
+		panic("context cannot be nil")
+	}
+	r.context = ctx
+	r.HTTPRequest = r.HTTPRequest.WithContext(ctx)
 }

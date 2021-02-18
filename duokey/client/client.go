@@ -39,7 +39,8 @@ func (t *duoKeyTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 
 var _ http.RoundTripper = (*duoKeyTransport)(nil)
 
-// New returns a pointer to a new DuoKey client
+// New returns a pointer to a new DuoKey client. If the credentials are correct, we obtain a DuoKey access token.
+// Then we configure an HTTP client using the token. The token will auto-refresh as necessary.
 func New(creds credentials.Config, routes restapi.Config) (*Client, error) {
 
 	oauth2Config, err := credentials.GetOauth2Config(creds)
