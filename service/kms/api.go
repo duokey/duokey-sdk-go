@@ -7,39 +7,39 @@ import (
 	"github.com/duokey/duokey-sdk-go/duokey/request"
 )
 
-// EncryptInput contains a plaintext to be encrypted by DuoKey. DuoKey determines the encryption
+// EncryptInput contains a payload to be encrypted by DuoKey. DuoKey determines the encryption
 // algorithm from the VaultID and KeyId. The optional field Algorithm allows you to specify a
 // chaining mode or a padding scheme. An initial vector or a tag can be supplied using the
 // Context field.
 type EncryptInput struct {
-	KeyID     string             `json:"keyid"`
-	VaultID   string             `json:"vaultid"`
-	Algorithm string             `json:"algorithm,omitempty"`
-	Context   map[string]*string `json:"context,omitempty"`
-	Plaintext []byte             `json:"plain"`
+	KeyID     string            `json:"keyid"`
+	VaultID   string            `json:"vaultid"`
+	Algorithm string            `json:"algorithm,omitempty"`
+	Context   map[string]string `json:"context,omitempty"`
+	Payload   []byte            `json:"payload"`
 }
 
 // EncryptOutput contains the deserialized payload returned by the DuoKey server.
 type EncryptOutput struct {
-	KeyID      string `json:"keyid"`
-	Algorithm  string `json:"algorithm,omitempty"`
-	Ciphertext []byte `json:"cipher"`
+	KeyID     string `json:"keyid"`
+	Algorithm string `json:"algorithm,omitempty"`
+	Payload   []byte `json:"payload"`
 }
 
-// DecryptInput contains a ciphertext to be decrypted by DuoKey.
+// DecryptInput contains a payload to be decrypted by DuoKey.
 type DecryptInput struct {
-	KeyID      string             `json:"keyid"`
-	VaultID    string             `json:"vaultid"`
-	Algorithm  string             `json:"algorithm,omitempty"`
-	Context    map[string]*string `json:"context,omitempty"`
-	Ciphertext []byte             `json:"cipher"`
+	KeyID     string            `json:"keyid"`
+	VaultID   string            `json:"vaultid"`
+	Algorithm string            `json:"algorithm,omitempty"`
+	Context   map[string]string `json:"context,omitempty"`
+	Payload   []byte            `json:"payload"`
 }
 
 // DecryptOutput contains the deserialized payload returned by the DuoKey server.
 type DecryptOutput struct {
 	KeyID     string `json:"keyid"`
 	Algorithm string `json:"algorithm,omitempty"`
-	Plaintext []byte `json:"plain"`
+	Payload   []byte `json:"payload"`
 }
 
 const opEncrypt = "Encrypt"
