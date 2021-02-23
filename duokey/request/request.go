@@ -62,7 +62,8 @@ func New(config duokey.Config, operation *Operation, params interface{}, data in
 		err = fmt.Errorf("InvalidEndpointURL (%s)", rawurl)
 	}
 
-	httpReq.Header.Set("Abp.TenantId", fmt.Sprint(config.Credentials.TenantID))
+	httpReq.Header.Add("Abp.TenantId", fmt.Sprint(config.Credentials.TenantID))
+	httpReq.Header.Add("Content-Type", "application/json")
 
 	r := &Request{
 		HTTPClient:  config.HTTPClient,
@@ -91,7 +92,7 @@ func (r *Request) Send() error {
 
 	var err error
 	if r.HTTPResponse, err = r.HTTPClient.Do(r.HTTPRequest); err != nil {
-		return errors.Wrap(err, "failed make HTTP request")
+		return errors.Wrap(err, "failed to make HTTP request")
 	}
 
 	if err = parseHTTPResponse(r.HTTPResponse, r.Data); err != nil {
@@ -115,8 +116,10 @@ func parseHTTPResponse(resp *http.Response, response interface{}) error {
 		return errors.Wrap(err, "failed to read response body")
 	}
 
-	if err = json.NewDecoder(bytes.NewReader(payload)).Decode(response); err != nil {
-		return errors.Wrap(err, "failed to decode response body")
+	if response != nil {
+		if err = json.NewDecoder(bytes.NewReader(payload)).Decode(response); err != nil {
+			return errors.Wrap(err, "failed to decode response body")
+		}
 	}
 
 	return nil

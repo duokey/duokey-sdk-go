@@ -12,6 +12,7 @@ import (
 // chaining mode or a padding scheme. An initial vector or a tag can be supplied using the
 // Context field.
 type EncryptInput struct {
+	ID        uint32            `json:"id"`
 	KeyID     string            `json:"keyid"`
 	VaultID   string            `json:"vaultid"`
 	Algorithm string            `json:"algorithm,omitempty"`
@@ -21,13 +22,22 @@ type EncryptInput struct {
 
 // EncryptOutput contains the deserialized payload returned by the DuoKey server.
 type EncryptOutput struct {
-	KeyID     string `json:"keyid"`
-	Algorithm string `json:"algorithm,omitempty"`
-	Payload   []byte `json:"payload"`
+	Success bool `json:"success"`
+	Result  struct {
+		KeyID     string `json:"keyid"`
+		Algorithm string `json:"algorithm"`
+		Payload   []byte `json:"payload"`
+		ID        uint32 `json:"id"`
+	} `json:"result"`
+	TargetURL           *string `json:"targetUrl"`
+	Error               *string `json:"error"`
+	UnauthorizedRequest bool    `json:"unAuthorizedRequest"`
+	ABP                 bool    `json:"__abp"`
 }
 
 // DecryptInput contains a payload to be decrypted by DuoKey.
 type DecryptInput struct {
+	ID        uint32            `json:"id"`
 	KeyID     string            `json:"keyid"`
 	VaultID   string            `json:"vaultid"`
 	Algorithm string            `json:"algorithm,omitempty"`
@@ -37,9 +47,17 @@ type DecryptInput struct {
 
 // DecryptOutput contains the deserialized payload returned by the DuoKey server.
 type DecryptOutput struct {
-	KeyID     string `json:"keyid"`
-	Algorithm string `json:"algorithm,omitempty"`
-	Payload   []byte `json:"payload"`
+	Success bool `json:"success"`
+	Result  struct {
+		KeyID     string `json:"keyid"`
+		Algorithm string `json:"algorithm"`
+		Payload   []byte `json:"payload"`
+		ID        uint32 `json:"id"`
+	} `json:"result"`
+	TargetURL           *string `json:"targetUrl"`
+	Error               *string `json:"error"`
+	UnauthorizedRequest bool    `json:"unAuthorizedRequest"`
+	ABP                 bool    `json:"__abp"`
 }
 
 const opEncrypt = "Encrypt"
@@ -56,6 +74,7 @@ func (k *KMS) encryptRequest(input *EncryptInput) (req *request.Request, output 
 		input = &EncryptInput{}
 	}
 
+	// rv := ResponseBody{}
 	output = &EncryptOutput{}
 	req = k.newRequest(op, input, output)
 

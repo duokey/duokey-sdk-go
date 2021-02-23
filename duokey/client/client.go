@@ -69,12 +69,12 @@ func New(creds credentials.Config, routes restapi.Config) (*Client, error) {
 		return nil, fmt.Errorf("bad token: expected 'Bearer', got '%s'", token.TokenType)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), httpClientTimeout)
-	defer cancel()
+	//ctx, cancel := context.WithTimeout(context.Background(), httpClientTimeout)
+	//defer cancel()
 
 	clientConfig := duokey.Config{Credentials: creds,
 		Routes:     routes,
-		HTTPClient: oauth2Config.Client(ctx, token)}
+		HTTPClient: oauth2Config.Client(context.Background(), token)}
 	client := &Client{Config: clientConfig}
 
 	return client, nil
