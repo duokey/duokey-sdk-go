@@ -74,7 +74,6 @@ func (k *KMS) encryptRequest(input *EncryptInput) (req *request.Request, output 
 		input = &EncryptInput{}
 	}
 
-	// rv := ResponseBody{}
 	output = &EncryptOutput{}
 	req = k.newRequest(op, input, output)
 
