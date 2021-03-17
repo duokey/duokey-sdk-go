@@ -9,7 +9,6 @@ import (
 	"github.com/duokey/duokey-sdk-go/duokey"
 	"github.com/duokey/duokey-sdk-go/duokey/credentials"
 	"github.com/duokey/duokey-sdk-go/duokey/request"
-	"github.com/duokey/duokey-sdk-go/duokey/restapi"
 	"golang.org/x/oauth2"
 )
 
@@ -17,7 +16,7 @@ const (
 	httpClientTimeout time.Duration = time.Second * 10
 )
 
-// Client implements the base client request and response handling. All 
+// Client implements the base client request and response handling. All
 // services rely on this client.
 type Client struct {
 	Config duokey.Config
@@ -41,7 +40,7 @@ var _ http.RoundTripper = (*duoKeyTransport)(nil)
 
 // New returns a pointer to a new DuoKey client. If the credentials are correct, we obtain a DuoKey access token.
 // Then we configure an HTTP client using the token. The token will auto-refresh as necessary.
-func New(creds credentials.Config, routes restapi.Config) (*Client, error) {
+func New(creds credentials.Config) (*Client, error) {
 
 	oauth2Config, err := credentials.GetOauth2Config(creds)
 	if err != nil {
@@ -69,18 +68,14 @@ func New(creds credentials.Config, routes restapi.Config) (*Client, error) {
 		return nil, fmt.Errorf("bad token: expected 'Bearer', got '%s'", token.TokenType)
 	}
 
-	//ctx, cancel := context.WithTimeout(context.Background(), httpClientTimeout)
-	//defer cancel()
-
 	clientConfig := duokey.Config{Credentials: creds,
-		Routes:     routes,
 		HTTPClient: oauth2Config.Client(context.Background(), token)}
 	client := &Client{Config: clientConfig}
 
 	return client, nil
 }
 
-// NewRequest returns a request pointer, The tenant ID is added to the http header.  
+// NewRequest returns a request pointer, The tenant ID is added to the http header.
 func (c *Client) NewRequest(operation *request.Operation, params interface{}, data interface{}) *request.Request {
 
 	return request.New(c.Config, operation, params, data)

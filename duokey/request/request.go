@@ -11,27 +11,24 @@ import (
 
 	"github.com/duokey/duokey-sdk-go/duokey"
 	"github.com/pkg/errors"
-	"golang.org/x/oauth2"
 )
 
 // Request ...
 type Request struct {
-	Token        *oauth2.Token
 	HTTPClient   *http.Client
 	HTTPRequest  *http.Request
 	HTTPResponse *http.Response
 	Error        error
 	Parameters   interface{}
 	Data         interface{}
-
-	context context.Context
 }
 
 // Operation (GET, POST)
 type Operation struct {
 	Name       string
 	HTTPMethod string
-	HTTPPath   string
+	BasePath   string
+	Route      string
 }
 
 // New returns a pointer to a request.
@@ -53,7 +50,7 @@ func New(config duokey.Config, operation *Operation, params interface{}, data in
 
 	httpReq, _ := http.NewRequest(method, "", nil)
 
-	rawurl := config.Routes.BasePath + operation.HTTPPath
+	rawurl := operation.BasePath + operation.Route
 
 	var err error
 	httpReq.URL, err = url.Parse(rawurl)
@@ -130,6 +127,5 @@ func (r *Request) SetContext(ctx context.Context) {
 	if ctx == nil {
 		panic("context cannot be nil")
 	}
-	r.context = ctx
 	r.HTTPRequest = r.HTTPRequest.WithContext(ctx)
 }

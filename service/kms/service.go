@@ -4,21 +4,29 @@ import (
 	"github.com/duokey/duokey-sdk-go/duokey/client"
 	"github.com/duokey/duokey-sdk-go/duokey/credentials"
 	"github.com/duokey/duokey-sdk-go/duokey/request"
-	"github.com/duokey/duokey-sdk-go/duokey/restapi"
 )
 
 // KMS implements the KMSAPI interface
 type KMS struct {
 	*client.Client
+	*Endpoints
+}
+
+// Endpoints of the crypto services (all routes of the DuoKey REST API
+// are customizable)
+type Endpoints struct {
+	BasePath     string
+	EncryptRoute string
+	DecryptRoute string
 }
 
 // New checks the credentials and returns a KMS client.
-func New(credentials credentials.Config, routes restapi.Config) (*KMS, error) {
-	client, err := client.New(credentials, routes)
+func New(credentials credentials.Config, endpoints Endpoints) (*KMS, error) {
+	client, err := client.New(credentials)
 	if err != nil {
 		return nil, err
 	}
-	return &KMS{Client: client}, nil
+	return &KMS{Client: client, Endpoints: &endpoints}, nil
 }
 
 func (c *KMS) newRequest(op *request.Operation, params interface{}, data interface{}) *request.Request {
