@@ -24,7 +24,7 @@ type Request struct {
 	Parameters   interface{}
 	Data         interface{}
 
-	context 	context.Context
+	context context.Context
 }
 
 // Operation (GET, POST)
@@ -42,7 +42,7 @@ func New(config duokey.Config, operation *Operation, params interface{}, data in
 
 	var method string
 	switch operation.HTTPMethod {
-	case http.MethodDelete, 
+	case http.MethodDelete,
 		http.MethodGet,
 		http.MethodPost,
 		http.MethodPut:
@@ -76,8 +76,8 @@ func New(config duokey.Config, operation *Operation, params interface{}, data in
 	return r
 }
 
-// Send transmits the request to a DuoKey server and returns an error if an 
-// unexpected issue is encountered. The deserialized response can be found in 
+// Send transmits the request to a DuoKey server and returns an error if an
+// unexpected issue is encountered. The deserialized response can be found in
 // r.Data.
 func (r *Request) Send() error {
 
@@ -126,7 +126,7 @@ func parseHTTPResponse(resp *http.Response, response interface{}) error {
 }
 
 // SetContext adds a context to a request.
-func (r* Request) SetContext(ctx context.Context) {
+func (r *Request) SetContext(ctx context.Context) {
 	if ctx == nil {
 		panic("context cannot be nil")
 	}
