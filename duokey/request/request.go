@@ -27,7 +27,7 @@ type Request struct {
 type Operation struct {
 	Name       string
 	HTTPMethod string
-	BasePath   string
+	BaseURL    string
 	Route      string
 }
 
@@ -50,7 +50,7 @@ func New(config duokey.Config, operation *Operation, params interface{}, data in
 
 	httpReq, _ := http.NewRequest(method, "", nil)
 
-	rawurl := operation.BasePath + operation.Route
+	rawurl := operation.BaseURL + operation.Route
 
 	var err error
 	httpReq.URL, err = url.Parse(rawurl)

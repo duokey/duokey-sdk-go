@@ -12,7 +12,6 @@ type Config struct {
 	Issuer       string // URL identifier for the service
 	ClientID     string
 	ClientSecret string
-	VaultID      string
 	UserName     string
 	Password     string
 	Scope        string

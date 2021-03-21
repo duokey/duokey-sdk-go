@@ -67,7 +67,7 @@ func (k *KMS) encryptRequest(input *EncryptInput) (req *request.Request, output 
 	op := &request.Operation{
 		Name:       opEncrypt,
 		HTTPMethod: http.MethodPost,
-		BasePath:   k.Endpoints.BasePath,
+		BaseURL:   k.Endpoints.BaseURL,
 		Route:      k.Endpoints.EncryptRoute,
 	}
 
@@ -104,7 +104,7 @@ func (k *KMS) decryptRequest(input *DecryptInput) (req *request.Request, output 
 	op := &request.Operation{
 		Name:       opDecrypt,
 		HTTPMethod: http.MethodPost,
-		BasePath:   k.Endpoints.BasePath,
+		BaseURL:   k.Endpoints.BaseURL,
 		Route:      k.Endpoints.DecryptRoute,
 	}
 

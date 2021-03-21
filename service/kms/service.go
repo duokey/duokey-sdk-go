@@ -15,7 +15,7 @@ type KMS struct {
 // Endpoints of the crypto services (all routes of the DuoKey REST API
 // are customizable)
 type Endpoints struct {
-	BasePath     string
+	BaseURL      string
 	EncryptRoute string
 	DecryptRoute string
 }
