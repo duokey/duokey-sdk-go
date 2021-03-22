@@ -13,6 +13,10 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	HeaderTenantID = "Abp.TenantId"
+)
+
 // Request ...
 type Request struct {
 	HTTPClient   *http.Client
@@ -59,7 +63,9 @@ func New(config duokey.Config, operation *Operation, params interface{}, data in
 		err = fmt.Errorf("InvalidEndpointURL (%s)", rawurl)
 	}
 
-	httpReq.Header.Add("Abp.TenantId", fmt.Sprint(config.Credentials.TenantID))
+	// Each request must include the tenant ID
+	httpReq.Header.Add(HeaderTenantID, fmt.Sprint(config.Credentials.TenantID))
+	
 	httpReq.Header.Add("Content-Type", "application/json")
 
 	r := &Request{

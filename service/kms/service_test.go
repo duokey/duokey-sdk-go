@@ -8,12 +8,14 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 	"time"
 
 	"github.com/duokey/duokey-sdk-go/duokey"
 	"github.com/duokey/duokey-sdk-go/duokey/client"
 	"github.com/duokey/duokey-sdk-go/duokey/credentials"
+	"github.com/duokey/duokey-sdk-go/duokey/request"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
@@ -100,11 +102,22 @@ func newClientWithMockServer(credentials credentials.Config, endpoints Endpoints
 	return &KMS{Endpoints: &endpoints, Client: &client}
 }
 
-func TestEncrypt(t *testing.T) {
+func TestEncryptDecrypt(t *testing.T) {
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var payload []byte
 		var err error
 		var body []byte
+
+		tenantID := r.Header.Get(request.HeaderTenantID)
+		if tenantID == "" {
+			t.Log("Tenant ID not found")
+			t.Fail()
+		}
+		_, err = strconv.Atoi(tenantID)
+		if err != nil {
+			t.Log("TenantID: bad format")
+			t.Fail()
+		}
 
 		if payload, err = ioutil.ReadAll(r.Body); err != nil {
 			t.Fail()
@@ -173,56 +186,113 @@ func TestEncrypt(t *testing.T) {
 
 func TestEncryptWithTimeout(t *testing.T) {
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Millisecond*10))
-	defer cancel()
-
-	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-		time.Sleep(1 * time.Second)
-
-		output := EncryptOutput{
-			Success: false,
-		}
-
-		reply := &bytes.Buffer{}
-		if err := json.NewEncoder(reply).Encode(output); err != nil {
-			t.Fail()
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(reply.Bytes())
-	}))
-	defer mockServer.Close()
-
-	endpoints := Endpoints{
-		BaseURL:      mockServer.URL,
-		EncryptRoute: encryptRoute,
-		DecryptRoute: decryptRoute,
+	testCases := []struct {
+		name    string
+		config  map[string]string
+		wantErr bool
+	}{
+		{name: "Responsive server",
+			config: map[string]string{
+				"context_timeout":      "10000",
+				"server_response_time": "1000",
+			},
+			wantErr: false,
+		},
+		{name: "Unresponsive server",
+			config: map[string]string{
+				"context_timeout":      "10",
+				"server_response_time": "100",
+			},
+			wantErr: true,
+		},
 	}
 
-	credentials := credentials.Config{
-		Issuer:       endpoints.BaseURL,
-		ClientID:     "client",
-		ClientSecret: uuid.New().String(),
-		UserName:     "jane.doe",
-		Password:     "tooManyS3cr3ts!",
-		Scope:        "key",
-		TenantID:     1,
-	}
+	for _, testCase := range testCases {
 
-	eInput := &EncryptInput{
-		KeyID:   uuid.New().String(),
-		VaultID: uuid.New().String(),
-		Payload: []byte("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."),
-	}
+		t.Run(testCase.name, func(t *testing.T) {
 
-	kmsClient := newClientWithMockServer(credentials, endpoints, mockServer.Client())
+			ctxTimeout, err := strconv.Atoi(testCase.config["context_timeout"])
+			if err != nil {
+				t.Log("Context with timeout: bad format")
+				t.Fail()
+			}
 
-	_, err := kmsClient.EncryptWithContext(ctx, eInput)
-	if err != nil {
-		msg := err.Error()
-		assert.Contains(t, msg, "context deadline exceeded", "a timeout was expected")
-	} else {
-		t.Fail()
+			serverResponseTime, err := strconv.Atoi(testCase.config["server_response_time"])
+			if err != nil {
+				t.Log("Server response time: bad format")
+				t.Fail()
+			}
+
+			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Duration(ctxTimeout)*time.Millisecond))
+			defer cancel()
+
+			mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				var payload []byte
+				var err error
+				var body []byte
+
+				time.Sleep(time.Duration(serverResponseTime) * time.Millisecond)
+
+				if payload, err = ioutil.ReadAll(r.Body); err != nil {
+					t.Fail()
+				}
+
+				switch r.RequestURI {
+				case encryptRoute:
+					if body, err = mockEncrypt(payload); err != nil {
+						t.Fail()
+					}
+				default:
+					t.Fail()
+				}
+
+				w.Header().Set("Content-Type", "application/json")
+				w.Write(body)
+			}))
+			defer mockServer.Close()
+
+			endpoints := Endpoints{
+				BaseURL:      mockServer.URL,
+				EncryptRoute: encryptRoute,
+				DecryptRoute: decryptRoute,
+			}
+
+			credentials := credentials.Config{
+				Issuer:       endpoints.BaseURL,
+				ClientID:     "client",
+				ClientSecret: uuid.New().String(),
+				UserName:     "jane.doe",
+				Password:     "tooManyS3cr3ts!",
+				Scope:        "key",
+				TenantID:     1,
+			}
+
+			eInput := &EncryptInput{
+				KeyID:   uuid.New().String(),
+				VaultID: uuid.New().String(),
+				Payload: []byte("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."),
+			}
+
+			kmsClient := newClientWithMockServer(credentials, endpoints, mockServer.Client())
+
+			eOutput, err := kmsClient.EncryptWithContext(ctx, eInput)
+
+			if testCase.wantErr {
+				if err != nil {
+					msg := err.Error()
+					assert.Contains(t, msg, "context deadline exceeded", "a timeout was expected")
+				} else {
+					t.Log("Timeout expected")
+					t.Fail()
+				}
+			} else {
+				if err != nil {
+					t.Log("Unexpected error")
+					t.Fail()
+				} else {
+					assert.Equal(t, []byte("TG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQsIGNvbnNlY3RldHVyIGFkaXBpc2NpbmcgZWxpdCwgc2VkIGRvIGVpdXNtb2QgdGVtcG9yIGluY2lkaWR1bnQgdXQgbGFib3JlIGV0IGRvbG9yZSBtYWduYSBhbGlxdWEu"), eOutput.Result.Payload)
+				}
+			}
+		})
 	}
 }
