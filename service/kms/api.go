@@ -7,6 +7,9 @@ import (
 	"github.com/duokey/duokey-sdk-go/duokey/request"
 )
 
+// Encryption
+const opEncrypt = "Encrypt"
+
 // EncryptInput contains a payload to be encrypted by DuoKey. DuoKey determines the encryption
 // algorithm from the VaultID and KeyId. The optional field Algorithm allows you to specify a
 // chaining mode or a padding scheme. An initial vector or a tag can be supplied using the
@@ -35,6 +38,44 @@ type EncryptOutput struct {
 	ABP                 bool    `json:"__abp"`
 }
 
+// Encrypt API operation for DuoKey
+func (k *KMS) Encrypt(input *EncryptInput) (*EncryptOutput, error) {
+	req, out := k.encryptRequest(input)
+
+	return out, req.Send()
+}
+
+// EncryptWithContext is the same operation as Encrypt. It is however possible
+// to pass a non-nil context.
+func (k *KMS) EncryptWithContext(ctx context.Context, input *EncryptInput) (*EncryptOutput, error) {
+	req, out := k.encryptRequest(input)
+	req.SetContext(ctx)
+
+	return out, req.Send()
+}
+
+func (k *KMS) encryptRequest(input *EncryptInput) (req *request.Request, output *EncryptOutput) {
+
+	op := &request.Operation{
+		Name:       opEncrypt,
+		HTTPMethod: http.MethodPost,
+		BaseURL:    k.Endpoints.BaseURL,
+		Route:      k.Endpoints.EncryptRoute,
+	}
+
+	if input == nil {
+		input = &EncryptInput{}
+	}
+
+	output = &EncryptOutput{}
+	req = k.newRequest(op, input, output)
+
+	return
+}
+
+// Decryption
+const opDecrypt = "Decrypt"
+
 // DecryptInput contains a payload to be decrypted by DuoKey.
 type DecryptInput struct {
 	ID        uint32            `json:"id"`
@@ -60,64 +101,6 @@ type DecryptOutput struct {
 	ABP                 bool    `json:"__abp"`
 }
 
-const opEncrypt = "Encrypt"
-
-func (k *KMS) encryptRequest(input *EncryptInput) (req *request.Request, output *EncryptOutput) {
-
-	op := &request.Operation{
-		Name:       opEncrypt,
-		HTTPMethod: http.MethodPost,
-		BaseURL:   k.Endpoints.BaseURL,
-		Route:      k.Endpoints.EncryptRoute,
-	}
-
-	if input == nil {
-		input = &EncryptInput{}
-	}
-
-	output = &EncryptOutput{}
-	req = k.newRequest(op, input, output)
-
-	return
-}
-
-// Encrypt API operation for DuoKey
-func (k *KMS) Encrypt(input *EncryptInput) (*EncryptOutput, error) {
-	req, out := k.encryptRequest(input)
-
-	return out, req.Send()
-}
-
-// EncryptWithContext is the same operation as Encrypt. It is however possible
-// to pass a non-nil context.
-func (k *KMS) EncryptWithContext(ctx context.Context, input *EncryptInput) (*EncryptOutput, error) {
-	req, out := k.encryptRequest(input)
-	req.SetContext(ctx)
-
-	return out, req.Send()
-}
-
-const opDecrypt = "Decrypt"
-
-func (k *KMS) decryptRequest(input *DecryptInput) (req *request.Request, output *DecryptOutput) {
-
-	op := &request.Operation{
-		Name:       opDecrypt,
-		HTTPMethod: http.MethodPost,
-		BaseURL:   k.Endpoints.BaseURL,
-		Route:      k.Endpoints.DecryptRoute,
-	}
-
-	if input == nil {
-		input = &DecryptInput{}
-	}
-
-	output = &DecryptOutput{}
-	req = k.newRequest(op, input, output)
-
-	return
-}
-
 // Decrypt API operation for DuoKey
 func (k *KMS) Decrypt(input *DecryptInput) (*DecryptOutput, error) {
 	req, out := k.decryptRequest(input)
@@ -132,4 +115,31 @@ func (k *KMS) DecryptWithContext(ctx context.Context, input *DecryptInput) (*Dec
 	req.SetContext(ctx)
 
 	return out, req.Send()
+}
+
+func (k *KMS) decryptRequest(input *DecryptInput) (req *request.Request, output *DecryptOutput) {
+
+	op := &request.Operation{
+		Name:       opDecrypt,
+		HTTPMethod: http.MethodPost,
+		BaseURL:    k.Endpoints.BaseURL,
+		Route:      k.Endpoints.DecryptRoute,
+	}
+
+	if input == nil {
+		input = &DecryptInput{}
+	}
+
+	output = &DecryptOutput{}
+	req = k.newRequest(op, input, output)
+
+	return
+}
+
+// Helpers
+
+func (k *KMS) newRequest(op *request.Operation, params interface{}, data interface{}) *request.Request {
+	req := k.NewRequest(op, params, data)
+
+	return req
 }

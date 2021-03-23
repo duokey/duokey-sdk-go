@@ -3,7 +3,6 @@ package kms
 import (
 	"github.com/duokey/duokey-sdk-go/duokey/client"
 	"github.com/duokey/duokey-sdk-go/duokey/credentials"
-	"github.com/duokey/duokey-sdk-go/duokey/request"
 )
 
 // KMS implements the KMSAPI interface
@@ -26,11 +25,6 @@ func New(credentials credentials.Config, endpoints Endpoints) (*KMS, error) {
 	if err != nil {
 		return nil, err
 	}
+	
 	return &KMS{Client: client, Endpoints: &endpoints}, nil
-}
-
-func (c *KMS) newRequest(op *request.Operation, params interface{}, data interface{}) *request.Request {
-	req := c.NewRequest(op, params, data)
-
-	return req
 }

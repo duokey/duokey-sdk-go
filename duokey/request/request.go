@@ -17,17 +17,18 @@ const (
 	HeaderTenantID = "Abp.TenantId"
 )
 
-// Request ...
+// Request stores the data needed to make a call to the DuoKey API and store the response
+// as well as a possible error
 type Request struct {
 	HTTPClient   *http.Client
 	HTTPRequest  *http.Request
 	HTTPResponse *http.Response
 	Error        error
-	Parameters   interface{}
-	Data         interface{}
+	Parameters   interface{} // Parameters needed to build the request body
+	Response     interface{} // Stores the deserialized response
 }
 
-// Operation (GET, POST)
+// Operation (GET, POST, etc.). The URL of the endpoint is given by baseURL + Route.
 type Operation struct {
 	Name       string
 	HTTPMethod string
@@ -36,12 +37,14 @@ type Operation struct {
 }
 
 // New returns a pointer to a request.
-// Params contains the input parameters needed to build the request body.
-// Data is pointer value to an object which the request's response
+// params contains the input parameters needed to build the request body.
+// response is pointer value to an object which the request's response
 // payload will be deserialized to.
-func New(config duokey.Config, operation *Operation, params interface{}, data interface{}) *Request {
+func New(config duokey.Config, operation *Operation, params interface{}, response interface{}) *Request {
 
+	var err error
 	var method string
+
 	switch operation.HTTPMethod {
 	case http.MethodDelete,
 		http.MethodGet,
@@ -49,23 +52,22 @@ func New(config duokey.Config, operation *Operation, params interface{}, data in
 		http.MethodPut:
 		method = operation.HTTPMethod
 	default:
-		method = http.MethodPost
+		err = fmt.Errorf("Unknown HTTP method: %s", operation.HTTPMethod)
 	}
 
 	httpReq, _ := http.NewRequest(method, "", nil)
 
 	rawurl := operation.BaseURL + operation.Route
 
-	var err error
 	httpReq.URL, err = url.Parse(rawurl)
 	if err != nil {
 		httpReq.URL = &url.URL{}
-		err = fmt.Errorf("InvalidEndpointURL (%s)", rawurl)
+		err = fmt.Errorf("Invalid endpoint URL (%s)", rawurl)
 	}
 
 	// Each request must include the tenant ID
 	httpReq.Header.Add(HeaderTenantID, fmt.Sprint(config.Credentials.TenantID))
-	
+
 	httpReq.Header.Add("Content-Type", "application/json")
 
 	r := &Request{
@@ -73,7 +75,7 @@ func New(config duokey.Config, operation *Operation, params interface{}, data in
 		HTTPRequest: httpReq,
 		Error:       err,
 		Parameters:  params,
-		Data:        data,
+		Response:    response,
 	}
 
 	return r
@@ -83,6 +85,10 @@ func New(config duokey.Config, operation *Operation, params interface{}, data in
 // unexpected issue is encountered. The deserialized response can be found in
 // r.Data.
 func (r *Request) Send() error {
+
+	if r.Error != nil {
+		return errors.Wrap(r.Error, "bad request")
+	}
 
 	body := &bytes.Buffer{}
 	if r.Parameters != nil {
@@ -94,11 +100,14 @@ func (r *Request) Send() error {
 	r.HTTPRequest.Body = ioutil.NopCloser(body)
 
 	var err error
+
 	if r.HTTPResponse, err = r.HTTPClient.Do(r.HTTPRequest); err != nil {
+		r.Error = err
 		return errors.Wrap(err, "failed to make HTTP request")
 	}
 
-	if err = parseHTTPResponse(r.HTTPResponse, r.Data); err != nil {
+	if err = parseHTTPResponse(r.HTTPResponse, r.Response); err != nil {
+		r.Error = err
 		return errors.Wrap(err, "failed to parse HTTP response")
 	}
 

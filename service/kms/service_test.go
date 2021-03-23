@@ -110,13 +110,11 @@ func TestEncryptDecrypt(t *testing.T) {
 
 		tenantID := r.Header.Get(request.HeaderTenantID)
 		if tenantID == "" {
-			t.Log("Tenant ID not found")
-			t.Fail()
+			t.Error("Tenant ID not found")
 		}
 		_, err = strconv.Atoi(tenantID)
 		if err != nil {
-			t.Log("TenantID: bad format")
-			t.Fail()
+			t.Error("TenantID: bad format")
 		}
 
 		if payload, err = ioutil.ReadAll(r.Body); err != nil {
@@ -193,17 +191,17 @@ func TestEncryptWithTimeout(t *testing.T) {
 	}{
 		{name: "Responsive server",
 			config: map[string]string{
-				"context_timeout":      "10000",
-				"server_response_time": "1000",
+				"context_timeout":      "10000", // All durations are in milliseconds
+				"server_response_time": "100",
 			},
 			wantErr: false,
 		},
 		{name: "Unresponsive server",
 			config: map[string]string{
 				"context_timeout":      "10",
-				"server_response_time": "100",
+				"server_response_time": "1000",
 			},
-			wantErr: true,
+			wantErr: true, // Timeout expected
 		},
 	}
 
@@ -211,25 +209,15 @@ func TestEncryptWithTimeout(t *testing.T) {
 
 		t.Run(testCase.name, func(t *testing.T) {
 
-			ctxTimeout, err := strconv.Atoi(testCase.config["context_timeout"])
-			if err != nil {
-				t.Log("Context with timeout: bad format")
-				t.Fail()
-			}
-
-			serverResponseTime, err := strconv.Atoi(testCase.config["server_response_time"])
-			if err != nil {
-				t.Log("Server response time: bad format")
-				t.Fail()
-			}
-
-			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Duration(ctxTimeout)*time.Millisecond))
-			defer cancel()
-
 			mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				var payload []byte
 				var err error
 				var body []byte
+
+				serverResponseTime, err := strconv.Atoi(testCase.config["server_response_time"])
+				if err != nil {
+					t.Error("Server response time: bad format")
+				}
 
 				time.Sleep(time.Duration(serverResponseTime) * time.Millisecond)
 
@@ -275,6 +263,14 @@ func TestEncryptWithTimeout(t *testing.T) {
 
 			kmsClient := newClientWithMockServer(credentials, endpoints, mockServer.Client())
 
+			ctxTimeout, err := strconv.Atoi(testCase.config["context_timeout"])
+			if err != nil {
+				t.Error("Context with timeout: bad format")
+			}
+
+			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Duration(ctxTimeout)*time.Millisecond))
+			defer cancel()
+
 			eOutput, err := kmsClient.EncryptWithContext(ctx, eInput)
 
 			if testCase.wantErr {
@@ -282,13 +278,11 @@ func TestEncryptWithTimeout(t *testing.T) {
 					msg := err.Error()
 					assert.Contains(t, msg, "context deadline exceeded", "a timeout was expected")
 				} else {
-					t.Log("Timeout expected")
-					t.Fail()
+					t.Error("Timeout expected")
 				}
 			} else {
 				if err != nil {
-					t.Log("Unexpected error")
-					t.Fail()
+					t.Errorf("Unexpected error: %w", err)
 				} else {
 					assert.Equal(t, []byte("TG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQsIGNvbnNlY3RldHVyIGFkaXBpc2NpbmcgZWxpdCwgc2VkIGRvIGVpdXNtb2QgdGVtcG9yIGluY2lkaWR1bnQgdXQgbGFib3JlIGV0IGRvbG9yZSBtYWduYSBhbGlxdWEu"), eOutput.Result.Payload)
 				}
