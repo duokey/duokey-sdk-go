@@ -2,10 +2,10 @@ package kms
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"github.com/duokey/duokey-sdk-go/duokey/request"
+	"gopkg.in/validator.v2"
 )
 
 // Encryption
@@ -17,8 +17,8 @@ const opEncrypt = "Encrypt"
 // Context field.
 type EncryptInput struct {
 	ID        uint32            `json:"id"`
-	KeyID     string            `json:"keyid"`
-	VaultID   string            `json:"vaultid"`
+	KeyID     string            `json:"keyid" validate:"nonzero"`
+	VaultID   string            `json:"vaultid" validate:"nonzero"`
 	Algorithm string            `json:"algorithm,omitempty"`
 	Context   map[string]string `json:"context,omitempty"`
 	Payload   []byte            `json:"payload"`
@@ -39,22 +39,10 @@ type EncryptOutput struct {
 	ABP                 bool    `json:"__abp"`
 }
 
-func validateEncryptInput(input *EncryptInput) error {
-	if input.KeyID == "" {
-		return fmt.Errorf("The key ID cannot be an empty string")
-	}
-
-	if input.VaultID == "" {
-		return fmt.Errorf("The vault ID cannot be an empty string")
-	}
-
-	return nil
-}
-
 // Encrypt API operation for DuoKey
 func (k *KMS) Encrypt(input *EncryptInput) (*EncryptOutput, error) {
-	
-	if err := validateEncryptInput(input); err != nil {
+
+	if err := validator.Validate(input); err != nil {
 		return nil, err
 	}
 
@@ -67,7 +55,7 @@ func (k *KMS) Encrypt(input *EncryptInput) (*EncryptOutput, error) {
 // to pass a non-nil context.
 func (k *KMS) EncryptWithContext(ctx context.Context, input *EncryptInput) (*EncryptOutput, error) {
 
-	if err := validateEncryptInput(input); err != nil {
+	if err := validator.Validate(input); err != nil {
 		return nil, err
 	}
 
@@ -102,8 +90,8 @@ const opDecrypt = "Decrypt"
 // DecryptInput contains a payload to be decrypted by DuoKey.
 type DecryptInput struct {
 	ID        uint32            `json:"id"`
-	KeyID     string            `json:"keyid"`
-	VaultID   string            `json:"vaultid"`
+	KeyID     string            `json:"keyid" validate:"nonzero"`
+	VaultID   string            `json:"vaultid validate:"nonzero"`
 	Algorithm string            `json:"algorithm,omitempty"`
 	Context   map[string]string `json:"context,omitempty"`
 	Payload   []byte            `json:"payload"`
@@ -124,22 +112,10 @@ type DecryptOutput struct {
 	ABP                 bool    `json:"__abp"`
 }
 
-func validateDecryptInput(input *DecryptInput) error {
-	if input.KeyID == "" {
-		return fmt.Errorf("The key ID cannot be an empty string")
-	}
-
-	if input.VaultID == "" {
-		return fmt.Errorf("The vault ID cannot be an empty string")
-	}
-
-	return nil
-}
-
 // Decrypt API operation for DuoKey
 func (k *KMS) Decrypt(input *DecryptInput) (*DecryptOutput, error) {
-	
-	if err := validateDecryptInput(input); err != nil {
+
+	if err := validator.Validate(input); err != nil {
 		return nil, err
 	}
 
@@ -152,10 +128,10 @@ func (k *KMS) Decrypt(input *DecryptInput) (*DecryptOutput, error) {
 // to pass a non-nil context.
 func (k *KMS) DecryptWithContext(ctx context.Context, input *DecryptInput) (*DecryptOutput, error) {
 
-	if err := validateDecryptInput(input); err != nil {
+	if err := validator.Validate(input); err != nil {
 		return nil, err
 	}
-	
+
 	req, out := k.decryptRequest(input)
 	req.SetContext(ctx)
 
