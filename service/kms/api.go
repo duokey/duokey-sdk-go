@@ -2,6 +2,7 @@ package kms
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/duokey/duokey-sdk-go/duokey/request"
@@ -38,8 +39,25 @@ type EncryptOutput struct {
 	ABP                 bool    `json:"__abp"`
 }
 
+func validateEncryptInput(input *EncryptInput) error {
+	if input.KeyID == "" {
+		return fmt.Errorf("The key ID cannot be an empty string")
+	}
+
+	if input.VaultID == "" {
+		return fmt.Errorf("The vault ID cannot be an empty string")
+	}
+
+	return nil
+}
+
 // Encrypt API operation for DuoKey
 func (k *KMS) Encrypt(input *EncryptInput) (*EncryptOutput, error) {
+	
+	if err := validateEncryptInput(input); err != nil {
+		return nil, err
+	}
+
 	req, out := k.encryptRequest(input)
 
 	return out, req.Send()
@@ -48,6 +66,11 @@ func (k *KMS) Encrypt(input *EncryptInput) (*EncryptOutput, error) {
 // EncryptWithContext is the same operation as Encrypt. It is however possible
 // to pass a non-nil context.
 func (k *KMS) EncryptWithContext(ctx context.Context, input *EncryptInput) (*EncryptOutput, error) {
+
+	if err := validateEncryptInput(input); err != nil {
+		return nil, err
+	}
+
 	req, out := k.encryptRequest(input)
 	req.SetContext(ctx)
 
@@ -101,8 +124,25 @@ type DecryptOutput struct {
 	ABP                 bool    `json:"__abp"`
 }
 
+func validateDecryptInput(input *DecryptInput) error {
+	if input.KeyID == "" {
+		return fmt.Errorf("The key ID cannot be an empty string")
+	}
+
+	if input.VaultID == "" {
+		return fmt.Errorf("The vault ID cannot be an empty string")
+	}
+
+	return nil
+}
+
 // Decrypt API operation for DuoKey
 func (k *KMS) Decrypt(input *DecryptInput) (*DecryptOutput, error) {
+	
+	if err := validateDecryptInput(input); err != nil {
+		return nil, err
+	}
+
 	req, out := k.decryptRequest(input)
 
 	return out, req.Send()
@@ -111,6 +151,11 @@ func (k *KMS) Decrypt(input *DecryptInput) (*DecryptOutput, error) {
 // DecryptWithContext is the same operation as Decrypt. It is however possible
 // to pass a non-nil context.
 func (k *KMS) DecryptWithContext(ctx context.Context, input *DecryptInput) (*DecryptOutput, error) {
+
+	if err := validateDecryptInput(input); err != nil {
+		return nil, err
+	}
+	
 	req, out := k.decryptRequest(input)
 	req.SetContext(ctx)
 
