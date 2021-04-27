@@ -48,7 +48,7 @@ func mockDecrypt(body []byte) ([]byte, error) {
 	output := DecryptOutput{
 		Success: true,
 		Result: struct {
-			KeyID     string `json:"keyid"`
+			KeyID     string `json:"keyid" validate:"nonzero"`
 			Algorithm string `json:"algorithm"`
 			Payload   []byte `json:"payload"`
 			ID        uint32 `json:"id"`
@@ -77,7 +77,7 @@ func mockEncrypt(body []byte) ([]byte, error) {
 	output := EncryptOutput{
 		Success: true,
 		Result: struct {
-			KeyID     string `json:"keyid"`
+			KeyID     string `json:"keyid" validate:"nonzero"`
 			Algorithm string `json:"algorithm"`
 			Payload   []byte `json:"payload"`
 			ID        uint32 `json:"id"`
@@ -100,6 +100,10 @@ func newClientWithMockServer(credentials credentials.Config, endpoints Endpoints
 	client := client.Client{Config: config}
 
 	return &KMS{Endpoints: &endpoints, Client: &client}
+}
+
+func TestInputValidation(t *testing.T) {
+
 }
 
 func TestEncryptDecrypt(t *testing.T) {

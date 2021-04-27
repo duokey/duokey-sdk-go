@@ -11,6 +11,7 @@ import (
 
 	"github.com/duokey/duokey-sdk-go/duokey"
 	"github.com/pkg/errors"
+	"gopkg.in/validator.v2"
 )
 
 const (
@@ -44,6 +45,13 @@ func New(config duokey.Config, operation *Operation, params interface{}, respons
 
 	var err error
 	var method string
+	var rawurl string
+
+	httpReq, _ := http.NewRequest(http.MethodPost, "", nil)
+
+	if err = validator.Validate(params); err != nil {
+		goto buildrequest
+	}
 
 	switch operation.HTTPMethod {
 	case http.MethodDelete,
@@ -53,21 +61,21 @@ func New(config duokey.Config, operation *Operation, params interface{}, respons
 		method = operation.HTTPMethod
 	default:
 		err = fmt.Errorf("Unknown HTTP method: %s", operation.HTTPMethod)
+		goto buildrequest
 	}
 
-	httpReq, _ := http.NewRequest(method, "", nil)
-
-	rawurl := operation.BaseURL + operation.Route
+	httpReq.Method = method
+	rawurl = operation.BaseURL + operation.Route
 
 	httpReq.URL, err = url.Parse(rawurl)
 	if err != nil {
 		httpReq.URL = &url.URL{}
-		err = fmt.Errorf("Invalid endpoint URL (%s)", rawurl)
 	}
+
+buildrequest:
 
 	// Each request must include the tenant ID
 	httpReq.Header.Add(HeaderTenantID, fmt.Sprint(config.Credentials.TenantID))
-
 	httpReq.Header.Add("Content-Type", "application/json")
 
 	r := &Request{
@@ -108,7 +116,12 @@ func (r *Request) Send() error {
 
 	if err = parseHTTPResponse(r.HTTPResponse, r.Response); err != nil {
 		r.Error = err
-		return errors.Wrap(err, "failed to parse HTTP response")
+		return err
+	}
+
+	if err := validator.Validate(r.Response); err != nil {
+		r.Error = err
+		return err
 	}
 
 	return nil
@@ -120,12 +133,12 @@ func parseHTTPResponse(resp *http.Response, response interface{}) error {
 	var payload []byte
 	var err error
 
-	if resp.StatusCode >= 300 {
-		return fmt.Errorf("request failed with status %d", resp.StatusCode)
-	}
-
 	if payload, err = ioutil.ReadAll(resp.Body); err != nil {
 		return errors.Wrap(err, "failed to read response body")
+	}
+
+	if resp.StatusCode >= 300 {
+		return fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(payload))
 	}
 
 	if response != nil {

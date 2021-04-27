@@ -75,7 +75,7 @@ func New(creds credentials.Config) (*Client, error) {
 	return client, nil
 }
 
-// NewRequest returns a request pointer, The tenant ID is added to the http header.
+// NewRequest returns a request pointer, The tenant ID is added to the HTTP header.
 func (c *Client) NewRequest(operation *request.Operation, params interface{}, data interface{}) *request.Request {
 
 	return request.New(c.Config, operation, params, data)

@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/duokey/duokey-sdk-go/duokey/request"
-	"gopkg.in/validator.v2"
 )
 
 // Encryption
@@ -28,7 +27,7 @@ type EncryptInput struct {
 type EncryptOutput struct {
 	Success bool `json:"success"`
 	Result  struct {
-		KeyID     string `json:"keyid"`
+		KeyID     string `json:"keyid" validate:"nonzero"`
 		Algorithm string `json:"algorithm"`
 		Payload   []byte `json:"payload"`
 		ID        uint32 `json:"id"`
@@ -42,10 +41,6 @@ type EncryptOutput struct {
 // Encrypt API operation for DuoKey
 func (k *KMS) Encrypt(input *EncryptInput) (*EncryptOutput, error) {
 
-	if err := validator.Validate(input); err != nil {
-		return nil, err
-	}
-
 	req, out := k.encryptRequest(input)
 
 	return out, req.Send()
@@ -54,10 +49,6 @@ func (k *KMS) Encrypt(input *EncryptInput) (*EncryptOutput, error) {
 // EncryptWithContext is the same operation as Encrypt. It is however possible
 // to pass a non-nil context.
 func (k *KMS) EncryptWithContext(ctx context.Context, input *EncryptInput) (*EncryptOutput, error) {
-
-	if err := validator.Validate(input); err != nil {
-		return nil, err
-	}
 
 	req, out := k.encryptRequest(input)
 	req.SetContext(ctx)
@@ -79,7 +70,7 @@ func (k *KMS) encryptRequest(input *EncryptInput) (req *request.Request, output 
 	}
 
 	output = &EncryptOutput{}
-	req = k.newRequest(op, input, output)
+	req = k.NewRequest(op, input, output)
 
 	return
 }
@@ -91,7 +82,7 @@ const opDecrypt = "Decrypt"
 type DecryptInput struct {
 	ID        uint32            `json:"id"`
 	KeyID     string            `json:"keyid" validate:"nonzero"`
-	VaultID   string            `json:"vaultid validate:"nonzero"`
+	VaultID   string            `json:"vaultid" validate:"nonzero"`
 	Algorithm string            `json:"algorithm,omitempty"`
 	Context   map[string]string `json:"context,omitempty"`
 	Payload   []byte            `json:"payload"`
@@ -101,7 +92,7 @@ type DecryptInput struct {
 type DecryptOutput struct {
 	Success bool `json:"success"`
 	Result  struct {
-		KeyID     string `json:"keyid"`
+		KeyID     string `json:"keyid" validate:"nonzero"`
 		Algorithm string `json:"algorithm"`
 		Payload   []byte `json:"payload"`
 		ID        uint32 `json:"id"`
@@ -115,10 +106,6 @@ type DecryptOutput struct {
 // Decrypt API operation for DuoKey
 func (k *KMS) Decrypt(input *DecryptInput) (*DecryptOutput, error) {
 
-	if err := validator.Validate(input); err != nil {
-		return nil, err
-	}
-
 	req, out := k.decryptRequest(input)
 
 	return out, req.Send()
@@ -127,10 +114,6 @@ func (k *KMS) Decrypt(input *DecryptInput) (*DecryptOutput, error) {
 // DecryptWithContext is the same operation as Decrypt. It is however possible
 // to pass a non-nil context.
 func (k *KMS) DecryptWithContext(ctx context.Context, input *DecryptInput) (*DecryptOutput, error) {
-
-	if err := validator.Validate(input); err != nil {
-		return nil, err
-	}
 
 	req, out := k.decryptRequest(input)
 	req.SetContext(ctx)
@@ -152,15 +135,8 @@ func (k *KMS) decryptRequest(input *DecryptInput) (req *request.Request, output 
 	}
 
 	output = &DecryptOutput{}
-	req = k.newRequest(op, input, output)
+	req = k.NewRequest(op, input, output)
 
 	return
 }
 
-// Helpers
-
-func (k *KMS) newRequest(op *request.Operation, params interface{}, data interface{}) *request.Request {
-	req := k.NewRequest(op, params, data)
-
-	return req
-}
