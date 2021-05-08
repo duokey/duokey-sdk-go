@@ -11,4 +11,6 @@ import (
 type Config struct {
 	Credentials credentials.Config
 	HTTPClient  *http.Client
+
+	Logger Logger
 }

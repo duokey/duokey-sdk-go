@@ -14,6 +14,7 @@ const opEncrypt = "Encrypt"
 // algorithm from the VaultID and KeyId. The optional field Algorithm allows you to specify a
 // chaining mode or a padding scheme. An initial vector or a tag can be supplied using the
 // Context field.
+// Validation is done by calling request.New.
 type EncryptInput struct {
 	ID        uint32            `json:"id"`
 	KeyID     string            `json:"keyid" validate:"nonzero"`
@@ -24,6 +25,7 @@ type EncryptInput struct {
 }
 
 // EncryptOutput contains the deserialized payload returned by the DuoKey server.
+// Validation is done by calling request.Send.
 type EncryptOutput struct {
 	Success bool `json:"success"`
 	Result  struct {
@@ -79,6 +81,7 @@ func (k *KMS) encryptRequest(input *EncryptInput) (req *request.Request, output 
 const opDecrypt = "Decrypt"
 
 // DecryptInput contains a payload to be decrypted by DuoKey.
+// Validation is done by calling request.New.
 type DecryptInput struct {
 	ID        uint32            `json:"id"`
 	KeyID     string            `json:"keyid" validate:"nonzero"`
@@ -89,6 +92,7 @@ type DecryptInput struct {
 }
 
 // DecryptOutput contains the deserialized payload returned by the DuoKey server.
+// Validation is done by calling request.Send.
 type DecryptOutput struct {
 	Success bool `json:"success"`
 	Result  struct {
@@ -139,4 +143,3 @@ func (k *KMS) decryptRequest(input *DecryptInput) (req *request.Request, output 
 
 	return
 }
-

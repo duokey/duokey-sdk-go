@@ -32,7 +32,7 @@ type duoKeyTransport struct {
 // https://developer20.com/add-header-to-every-request-in-go/ and
 // https://rakyll.medium.com/context-propagation-over-http-in-go-d4540996e9b0).
 func (t *duoKeyTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	req.Header.Set("Abp.TenantId", fmt.Sprint(t.TenantID))
+	req.Header.Set(request.HeaderTenantID, fmt.Sprint(t.TenantID))
 	return http.DefaultTransport.RoundTrip(req)
 }
 
@@ -40,7 +40,7 @@ var _ http.RoundTripper = (*duoKeyTransport)(nil)
 
 // New returns a pointer to a new DuoKey client. If the credentials are correct, we obtain a DuoKey access token.
 // Then we configure an HTTP client using the token. The token will auto-refresh as necessary.
-func New(creds credentials.Config) (*Client, error) {
+func New(creds credentials.Config, logger duokey.Logger) (*Client, error) {
 
 	oauth2Config, err := credentials.GetOauth2Config(creds)
 	if err != nil {
@@ -68,8 +68,18 @@ func New(creds credentials.Config) (*Client, error) {
 		return nil, fmt.Errorf("bad token: expected 'Bearer', got '%s'", token.TokenType)
 	}
 
-	clientConfig := duokey.Config{Credentials: creds,
-		HTTPClient: oauth2Config.Client(context.Background(), token)}
+	clientConfig := duokey.Config{
+		Credentials: creds,
+		HTTPClient: oauth2Config.Client(context.Background(), token),
+	}
+
+	switch logger {
+	case nil:
+		clientConfig.Logger = duokey.NewDefaultLogger()
+	default:
+		clientConfig.Logger = logger
+	}
+
 	client := &Client{Config: clientConfig}
 
 	return client, nil

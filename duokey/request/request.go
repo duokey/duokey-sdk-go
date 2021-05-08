@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	HeaderTenantID = "Abp.TenantId"
+	HeaderTenantID = "Abp.TenantId" // TODO: replace by X-DUOKEY-TENANTID
 )
 
 // Request stores the data needed to make a call to the DuoKey API and store the response
@@ -44,10 +44,14 @@ type Operation struct {
 func New(config duokey.Config, operation *Operation, params interface{}, response interface{}) *Request {
 
 	var err error
-	var method string
 	var rawurl string
 
 	httpReq, _ := http.NewRequest(http.MethodPost, "", nil)
+
+	if operation == nil {
+		err = fmt.Errorf("Operation not defined")
+		goto buildrequest
+	}
 
 	if err = validator.Validate(params); err != nil {
 		goto buildrequest
@@ -58,35 +62,32 @@ func New(config duokey.Config, operation *Operation, params interface{}, respons
 		http.MethodGet,
 		http.MethodPost,
 		http.MethodPut:
-		method = operation.HTTPMethod
+		httpReq.Method = operation.HTTPMethod
 	default:
 		err = fmt.Errorf("Unknown HTTP method: %s", operation.HTTPMethod)
 		goto buildrequest
 	}
 
-	httpReq.Method = method
 	rawurl = operation.BaseURL + operation.Route
-
 	httpReq.URL, err = url.Parse(rawurl)
 	if err != nil {
 		httpReq.URL = &url.URL{}
+		goto buildrequest
 	}
-
-buildrequest:
 
 	// Each request must include the tenant ID
 	httpReq.Header.Add(HeaderTenantID, fmt.Sprint(config.Credentials.TenantID))
 	httpReq.Header.Add("Content-Type", "application/json")
 
-	r := &Request{
+buildrequest:
+
+	return &Request{
 		HTTPClient:  config.HTTPClient,
 		HTTPRequest: httpReq,
 		Error:       err,
 		Parameters:  params,
 		Response:    response,
 	}
-
-	return r
 }
 
 // Send transmits the request to a DuoKey server and returns an error if an
@@ -119,9 +120,10 @@ func (r *Request) Send() error {
 		return err
 	}
 
+	// Validate the payload returned by the server (usefule to detect problems on the server side)
 	if err := validator.Validate(r.Response); err != nil {
 		r.Error = err
-		return err
+		return errors.Wrap(err, "server error")
 	}
 
 	return nil
@@ -137,7 +139,7 @@ func parseHTTPResponse(resp *http.Response, response interface{}) error {
 		return errors.Wrap(err, "failed to read response body")
 	}
 
-	if resp.StatusCode >= 300 {
+	if resp.StatusCode >= http.StatusMultipleChoices {
 		return fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(payload))
 	}
 
