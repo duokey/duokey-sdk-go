@@ -44,6 +44,7 @@ func New(creds credentials.Config, logger duokey.Logger) (*Client, error) {
 
 	oauth2Config, err := credentials.GetOauth2Config(creds)
 	if err != nil {
+		logger.Infof("could not read the token and authorization URLs from the discovery document:%v", err)
 		return nil, err
 	}
 
@@ -76,8 +77,10 @@ func New(creds credentials.Config, logger duokey.Logger) (*Client, error) {
 	switch logger {
 	case nil:
 		clientConfig.Logger = duokey.NewDefaultLogger()
+		clientConfig.Logger.Info("New DuoKey client with default logger")
 	default:
 		clientConfig.Logger = logger
+		clientConfig.Logger.Info("New DuoKey client")
 	}
 
 	client := &Client{Config: clientConfig}

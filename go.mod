@@ -4,11 +4,11 @@ go 1.16
 
 require (
 	github.com/coreos/go-oidc/v3 v3.0.0
-	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/google/go-cmp v0.5.5 // indirect
 	github.com/google/uuid v1.2.0
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.5.1
+	go.uber.org/zap v1.16.0
 	golang.org/x/net v0.0.0-20201021035429-f5854403a974 // indirect
 	golang.org/x/oauth2 v0.0.0-20210210192628-66670185b0cd
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
