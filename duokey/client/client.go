@@ -41,6 +41,7 @@ func (twl *transportWithLogger) RoundTrip(req *http.Request) (*http.Response, er
 
 type duoKeyTransport struct {
 	TenantID uint32
+	HeaderTenantID string
 }
 
 var _ http.RoundTripper = (*duoKeyTransport)(nil)
@@ -51,7 +52,7 @@ var _ http.RoundTripper = (*duoKeyTransport)(nil)
 // https://developer20.com/add-header-to-every-request-in-go/ and
 // https://rakyll.medium.com/context-propagation-over-http-in-go-d4540996e9b0).
 func (t *duoKeyTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	req.Header.Set(request.HeaderTenantID, fmt.Sprint(t.TenantID))
+	req.Header.Set(t.HeaderTenantID, fmt.Sprint(t.TenantID))
 	return http.DefaultTransport.RoundTrip(req)
 }
 
@@ -66,7 +67,10 @@ func New(creds credentials.Config, logger duokey.Logger) (*Client, error) {
 	}
 
 	// The custom transport adds the tenant ID to the header
-	transport := &duoKeyTransport{TenantID: creds.TenantID}
+	transport := &duoKeyTransport{
+		TenantID: creds.TenantID,
+		HeaderTenantID: creds.HeaderTenantID, 
+	}
 
 	httpClient := &http.Client{Transport: transport, Timeout: httpClientTimeout}
 	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, httpClient)

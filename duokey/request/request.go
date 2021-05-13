@@ -14,10 +14,6 @@ import (
 	"gopkg.in/validator.v2"
 )
 
-const (
-	HeaderTenantID = "Abp.TenantId" // TODO: replace by X-DUOKEY-TENANTID
-)
-
 // Request stores the data needed to make a call to the DuoKey API and store the response
 // as well as a possible error
 type Request struct {
@@ -76,7 +72,7 @@ func New(config duokey.Config, operation *Operation, params interface{}, respons
 	}
 
 	// Each request must include the tenant ID
-	httpReq.Header.Add(HeaderTenantID, fmt.Sprint(config.Credentials.TenantID))
+	httpReq.Header.Add(config.Credentials.HeaderTenantID, fmt.Sprint(config.Credentials.TenantID))
 	httpReq.Header.Add("Content-Type", "application/json")
 
 buildrequest:
