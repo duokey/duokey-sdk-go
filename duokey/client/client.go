@@ -22,6 +22,22 @@ type Client struct {
 	Config duokey.Config
 }
 
+type transportWithLogger struct {
+	Transport http.RoundTripper
+	Logger duokey.Logger
+}
+
+func (twl transportWithLogger) RoundTrip(req *http.Request) (*http.Response, error) {
+    twl.Logger.Infof("Sending request to %v", req.URL)
+
+    // Start the timer
+	start := time.Now()
+	defer twl.Logger.Infof("Request took %s", time.Since(start))
+	
+	// Send the request
+    return twl.Transport.RoundTrip(req)
+}
+
 type duoKeyTransport struct {
 	TenantID uint32
 }
@@ -69,20 +85,39 @@ func New(creds credentials.Config, logger duokey.Logger) (*Client, error) {
 		return nil, fmt.Errorf("bad token: expected 'Bearer', got '%s'", token.TokenType)
 	}
 
-	clientConfig := duokey.Config{
-		Credentials: creds,
-		HTTPClient: oauth2Config.Client(context.Background(), token),
-	}
+	var clientConfig duokey.Config
 
-	switch logger {
-	case nil:
+	// Logger
+	clientConfig.Logger = logger
+	if clientConfig.Logger == nil {
 		clientConfig.Logger = duokey.NewDefaultLogger()
-		clientConfig.Logger.Info("New DuoKey client with default logger")
-	default:
-		clientConfig.Logger = logger
-		clientConfig.Logger.Info("New DuoKey client")
+		clientConfig.Logger.Info("Default logger")
 	}
 
+
+	oauth2Client := oauth2Config.Client(context.Background(), token)
+	transportWithLogger := transportWithLogger{
+		Transport: oauth2Client.Transport,
+		Logger: clientConfig.Logger,
+	}
+	// httpClient := &http.Client{
+    //     Transport: LoggingRoundTripper{http.DefaultTransport},
+    // }
+
+	clientConfig.Credentials = creds
+	clientConfig.HTTPClient = &http.Client{
+		Transport: transportWithLogger,
+	}
+
+	// clientConfig := duokey.Config{
+	// 	Credentials: creds,
+	// 	HTTPClient: oauth2Client,
+	// }
+
+	// https://stackoverflow.com/questions/39527847/is-there-middleware-for-go-http-client
+	//clientConfig.HTTPClient.Transport
+
+	
 	client := &Client{Config: clientConfig}
 
 	return client, nil

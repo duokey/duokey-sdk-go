@@ -5,8 +5,6 @@ import (
 	"os"
 )
 
-// https://dave.cheney.net/tag/logging
-
 // Logger is a generic logging interface. Zap SugaredLogger and Logrus automatically implement
 // this interface
 type Logger interface {
@@ -26,6 +24,8 @@ func (dl defaultLogger) Infof(format string, args ...interface{}) {
 	dl.logger.Printf(format, args...)
 }
 
+// NewDefaultLogger returns a Logger which will write log messages to stdout.
+// Each log entry is prefixed with date and time.
 func NewDefaultLogger() Logger {
 	return &defaultLogger{
 		logger: log.New(os.Stdout, "", log.LstdFlags),
