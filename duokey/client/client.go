@@ -24,23 +24,26 @@ type Client struct {
 
 type transportWithLogger struct {
 	Transport http.RoundTripper
-	Logger duokey.Logger
+	Logger    duokey.Logger
 }
 
-func (twl transportWithLogger) RoundTrip(req *http.Request) (*http.Response, error) {
-    twl.Logger.Infof("Sending request to %v", req.URL)
+var _ http.RoundTripper = (*transportWithLogger)(nil)
 
-    // Start the timer
+func (twl *transportWithLogger) RoundTrip(req *http.Request) (*http.Response, error) {
+
+	// Start the timer and log the event
 	start := time.Now()
-	defer twl.Logger.Infof("Request took %s", time.Since(start))
-	
+	defer twl.Logger.Infof("Request to %v took %s", req.URL, time.Since(start))
+
 	// Send the request
-    return twl.Transport.RoundTrip(req)
+	return twl.Transport.RoundTrip(req)
 }
 
 type duoKeyTransport struct {
 	TenantID uint32
 }
+
+var _ http.RoundTripper = (*duoKeyTransport)(nil)
 
 // RoundTrip adds the tenant ID to the PasswordCredentialsToken request.
 // Remark: we shouln't mutate a request this way. However, it seems that it's the
@@ -51,8 +54,6 @@ func (t *duoKeyTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	req.Header.Set(request.HeaderTenantID, fmt.Sprint(t.TenantID))
 	return http.DefaultTransport.RoundTrip(req)
 }
-
-var _ http.RoundTripper = (*duoKeyTransport)(nil)
 
 // New returns a pointer to a new DuoKey client. If the credentials are correct, we obtain a DuoKey access token.
 // Then we configure an HTTP client using the token. The token will auto-refresh as necessary.
@@ -94,30 +95,21 @@ func New(creds credentials.Config, logger duokey.Logger) (*Client, error) {
 		clientConfig.Logger.Info("Default logger")
 	}
 
-
+	// Get an OAuth 2 client
 	oauth2Client := oauth2Config.Client(context.Background(), token)
+
+	// Wrap the transport to log all requests
 	transportWithLogger := transportWithLogger{
 		Transport: oauth2Client.Transport,
-		Logger: clientConfig.Logger,
+		Logger:    clientConfig.Logger,
 	}
-	// httpClient := &http.Client{
-    //     Transport: LoggingRoundTripper{http.DefaultTransport},
-    // }
 
+	// Configure the new DuoKey client
 	clientConfig.Credentials = creds
 	clientConfig.HTTPClient = &http.Client{
-		Transport: transportWithLogger,
+		Transport: &transportWithLogger,
 	}
 
-	// clientConfig := duokey.Config{
-	// 	Credentials: creds,
-	// 	HTTPClient: oauth2Client,
-	// }
-
-	// https://stackoverflow.com/questions/39527847/is-there-middleware-for-go-http-client
-	//clientConfig.HTTPClient.Transport
-
-	
 	client := &Client{Config: clientConfig}
 
 	return client, nil
