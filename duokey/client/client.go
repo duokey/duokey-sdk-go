@@ -40,8 +40,9 @@ func (twl *transportWithLogger) RoundTrip(req *http.Request) (*http.Response, er
 }
 
 type duoKeyTransport struct {
-	TenantID uint32
+	TenantID       uint32
 	HeaderTenantID string
+	Logger         duokey.Logger
 }
 
 var _ http.RoundTripper = (*duoKeyTransport)(nil)
@@ -53,12 +54,24 @@ var _ http.RoundTripper = (*duoKeyTransport)(nil)
 // https://rakyll.medium.com/context-propagation-over-http-in-go-d4540996e9b0).
 func (t *duoKeyTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	req.Header.Set(t.HeaderTenantID, fmt.Sprint(t.TenantID))
+	start := time.Now()
+	defer t.Logger.Infof("Request to %v took %s", req.URL, time.Since(start))
+
 	return http.DefaultTransport.RoundTrip(req)
 }
 
 // New returns a pointer to a new DuoKey client. If the credentials are correct, we obtain a DuoKey access token.
 // Then we configure an HTTP client using the token. The token will auto-refresh as necessary.
 func New(creds credentials.Config, logger duokey.Logger) (*Client, error) {
+
+	var clientConfig duokey.Config
+
+	// Logger
+	clientConfig.Logger = logger
+	if clientConfig.Logger == nil {
+		clientConfig.Logger = duokey.NewDefaultLogger()
+		clientConfig.Logger.Info("Default logger")
+	}
 
 	oauth2Config, err := credentials.GetOauth2Config(creds)
 	if err != nil {
@@ -68,8 +81,9 @@ func New(creds credentials.Config, logger duokey.Logger) (*Client, error) {
 
 	// The custom transport adds the tenant ID to the header
 	transport := &duoKeyTransport{
-		TenantID: creds.TenantID,
-		HeaderTenantID: creds.HeaderTenantID, 
+		TenantID:       creds.TenantID,
+		HeaderTenantID: creds.HeaderTenantID,
+		Logger:         clientConfig.Logger,
 	}
 
 	httpClient := &http.Client{Transport: transport, Timeout: httpClientTimeout}
@@ -90,20 +104,11 @@ func New(creds credentials.Config, logger duokey.Logger) (*Client, error) {
 		return nil, fmt.Errorf("bad token: expected 'Bearer', got '%s'", token.TokenType)
 	}
 
-	var clientConfig duokey.Config
-
-	// Logger
-	clientConfig.Logger = logger
-	if clientConfig.Logger == nil {
-		clientConfig.Logger = duokey.NewDefaultLogger()
-		clientConfig.Logger.Info("Default logger")
-	}
-
 	// Get an OAuth 2 client
 	oauth2Client := oauth2Config.Client(context.Background(), token)
 
-	// Wrap the transport to log all requests
-	transportWithLogger := transportWithLogger{
+	// Wrap oauth2Client.Transport to log all requests
+	transportWithLogger := &transportWithLogger{
 		Transport: oauth2Client.Transport,
 		Logger:    clientConfig.Logger,
 	}
@@ -111,7 +116,7 @@ func New(creds credentials.Config, logger duokey.Logger) (*Client, error) {
 	// Configure the new DuoKey client
 	clientConfig.Credentials = creds
 	clientConfig.HTTPClient = &http.Client{
-		Transport: &transportWithLogger,
+		Transport: transportWithLogger,
 	}
 
 	client := &Client{Config: clientConfig}
