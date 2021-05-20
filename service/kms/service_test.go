@@ -152,14 +152,14 @@ func TestEncryptDecrypt(t *testing.T) {
 	}
 
 	credentials := credentials.Config{
-		Issuer:       endpoints.BaseURL,
-		ClientID:     "client",
-		ClientSecret: uuid.New().String(),
-		UserName:     "jane.doe",
-		Password:     "tooManyS3cr3ts!",
-		Scope:        "key",
+		Issuer:         endpoints.BaseURL,
+		ClientID:       "client",
+		ClientSecret:   uuid.New().String(),
+		UserName:       "jane.doe",
+		Password:       "tooManyS3cr3ts!",
+		Scope:          "key",
 		HeaderTenantID: headerTenantID,
-		TenantID:     1,
+		TenantID:       1,
 	}
 
 	kmsClient := newClientWithMockServer(credentials, endpoints, mockServer.Client())
@@ -253,13 +253,14 @@ func TestEncryptWithTimeout(t *testing.T) {
 			}
 
 			credentials := credentials.Config{
-				Issuer:       endpoints.BaseURL,
-				ClientID:     "client",
-				ClientSecret: uuid.New().String(),
-				UserName:     "jane.doe",
-				Password:     "tooManyS3cr3ts!",
-				Scope:        "key",
-				TenantID:     1,
+				Issuer:         endpoints.BaseURL,
+				ClientID:       "client",
+				ClientSecret:   uuid.New().String(),
+				UserName:       "jane.doe",
+				Password:       "tooManyS3cr3ts!",
+				Scope:          "key",
+				HeaderTenantID: "Abp.TenantId",
+				TenantID:       1,
 			}
 
 			eInput := &EncryptInput{

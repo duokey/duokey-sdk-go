@@ -33,7 +33,7 @@ func (twl *transportWithLogger) RoundTrip(req *http.Request) (*http.Response, er
 
 	// Start the timer and log the event
 	start := time.Now()
-	defer twl.Logger.Infof("Request to %v took %s", req.URL, time.Since(start))
+	defer twl.Logger.Infof("request to %v took %s", req.URL, time.Since(start))
 
 	// Send the request
 	return twl.Transport.RoundTrip(req)
@@ -55,7 +55,7 @@ var _ http.RoundTripper = (*duoKeyTransport)(nil)
 func (t *duoKeyTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	req.Header.Set(t.HeaderTenantID, fmt.Sprint(t.TenantID))
 	start := time.Now()
-	defer t.Logger.Infof("Request to %v took %s", req.URL, time.Since(start))
+	defer t.Logger.Infof("request to %v took %s", req.URL, time.Since(start))
 
 	return http.DefaultTransport.RoundTrip(req)
 }

@@ -20,8 +20,13 @@ type Endpoints struct {
 	DecryptRoute string
 }
 
-// New checks the credentials and returns a KMS client.
-func New(credentials credentials.Config, endpoints Endpoints, logger duokey.Logger) (*KMS, error) {
+// New checks the credentials and returns a KMS client with the default logger.
+func NewClient(credentials credentials.Config, endpoints Endpoints) (*KMS, error) {
+	return NewClientWithLogger(credentials, endpoints, nil)
+}
+
+// New checks the credentials and returns a KMS client with a custom logger.
+func NewClientWithLogger(credentials credentials.Config, endpoints Endpoints, logger duokey.Logger) (*KMS, error) {
 	client, err := client.New(credentials, logger)
 	if err != nil {
 		return nil, err

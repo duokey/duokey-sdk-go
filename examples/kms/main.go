@@ -173,7 +173,7 @@ func main() {
 		DecryptRoute: decryptRoute,
 	}
 
-	vaultClient, err := kms.New(credentials, endpoints, nil)
+	vaultClient, err := kms.NewClient(credentials, endpoints)
 	if err != nil {
 		fmt.Println("Error:", err.Error())
 		os.Exit(1)
