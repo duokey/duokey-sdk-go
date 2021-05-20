@@ -22,9 +22,30 @@ type Client struct {
 	Config duokey.Config
 }
 
-type duoKeyTransport struct {
-	TenantID uint32
+type transportWithLogger struct {
+	Transport http.RoundTripper
+	Logger    duokey.Logger
 }
+
+var _ http.RoundTripper = (*transportWithLogger)(nil)
+
+func (twl *transportWithLogger) RoundTrip(req *http.Request) (*http.Response, error) {
+
+	// Start the timer and log the event
+	start := time.Now()
+	defer twl.Logger.Infof("request to %v took %s", req.URL, time.Since(start))
+
+	// Send the request
+	return twl.Transport.RoundTrip(req)
+}
+
+type duoKeyTransport struct {
+	TenantID       uint32
+	HeaderTenantID string
+	Logger         duokey.Logger
+}
+
+var _ http.RoundTripper = (*duoKeyTransport)(nil)
 
 // RoundTrip adds the tenant ID to the PasswordCredentialsToken request.
 // Remark: we shouln't mutate a request this way. However, it seems that it's the
@@ -32,23 +53,40 @@ type duoKeyTransport struct {
 // https://developer20.com/add-header-to-every-request-in-go/ and
 // https://rakyll.medium.com/context-propagation-over-http-in-go-d4540996e9b0).
 func (t *duoKeyTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	req.Header.Set("Abp.TenantId", fmt.Sprint(t.TenantID))
+	req.Header.Set(t.HeaderTenantID, fmt.Sprint(t.TenantID))
+	start := time.Now()
+	defer t.Logger.Infof("request to %v took %s", req.URL, time.Since(start))
+
 	return http.DefaultTransport.RoundTrip(req)
 }
 
-var _ http.RoundTripper = (*duoKeyTransport)(nil)
-
 // New returns a pointer to a new DuoKey client. If the credentials are correct, we obtain a DuoKey access token.
 // Then we configure an HTTP client using the token. The token will auto-refresh as necessary.
-func New(creds credentials.Config) (*Client, error) {
+func New(creds credentials.Config, logger duokey.Logger) (*Client, error) {
 
+	var clientConfig duokey.Config
+
+	// Logger
+	if logger == nil {
+		clientConfig.Logger = duokey.NewDefaultLogger()
+		clientConfig.Logger.Info("Default logger")
+	} else {
+		clientConfig.Logger = logger
+	}
+
+	// Read the discovery document
 	oauth2Config, err := credentials.GetOauth2Config(creds)
 	if err != nil {
+		logger.Infof("could not read the token and authorization URLs from the discovery document:%v", err)
 		return nil, err
 	}
 
 	// The custom transport adds the tenant ID to the header
-	transport := &duoKeyTransport{TenantID: creds.TenantID}
+	transport := &duoKeyTransport{
+		TenantID:       creds.TenantID,
+		HeaderTenantID: creds.HeaderTenantID,
+		Logger:         clientConfig.Logger,
+	}
 
 	httpClient := &http.Client{Transport: transport, Timeout: httpClientTimeout}
 	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, httpClient)
@@ -56,6 +94,7 @@ func New(creds credentials.Config) (*Client, error) {
 	// Password credentials call
 	token, err := oauth2Config.PasswordCredentialsToken(ctx, creds.UserName, creds.Password)
 	if err != nil {
+		clientConfig.Logger.Info("could not get the token")
 		return nil, err
 	}
 
@@ -68,8 +107,21 @@ func New(creds credentials.Config) (*Client, error) {
 		return nil, fmt.Errorf("bad token: expected 'Bearer', got '%s'", token.TokenType)
 	}
 
-	clientConfig := duokey.Config{Credentials: creds,
-		HTTPClient: oauth2Config.Client(context.Background(), token)}
+	// Get an OAuth 2 client
+	oauth2Client := oauth2Config.Client(context.Background(), token)
+
+	// Wrap oauth2Client.Transport to log all requests
+	transportWithLogger := &transportWithLogger{
+		Transport: oauth2Client.Transport,
+		Logger:    clientConfig.Logger,
+	}
+
+	// Configure the new DuoKey client
+	clientConfig.Credentials = creds
+	clientConfig.HTTPClient = &http.Client{
+		Transport: transportWithLogger,
+	}
+
 	client := &Client{Config: clientConfig}
 
 	return client, nil

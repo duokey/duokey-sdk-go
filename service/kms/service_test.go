@@ -15,7 +15,6 @@ import (
 	"github.com/duokey/duokey-sdk-go/duokey"
 	"github.com/duokey/duokey-sdk-go/duokey/client"
 	"github.com/duokey/duokey-sdk-go/duokey/credentials"
-	"github.com/duokey/duokey-sdk-go/duokey/request"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
@@ -107,12 +106,15 @@ func TestInputValidation(t *testing.T) {
 }
 
 func TestEncryptDecrypt(t *testing.T) {
+
+	const headerTenantID = "Abp.TenantId"
+
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var payload []byte
 		var err error
 		var body []byte
 
-		tenantID := r.Header.Get(request.HeaderTenantID)
+		tenantID := r.Header.Get(headerTenantID)
 		if tenantID == "" {
 			t.Error("Tenant ID not found")
 		}
@@ -150,13 +152,14 @@ func TestEncryptDecrypt(t *testing.T) {
 	}
 
 	credentials := credentials.Config{
-		Issuer:       endpoints.BaseURL,
-		ClientID:     "client",
-		ClientSecret: uuid.New().String(),
-		UserName:     "jane.doe",
-		Password:     "tooManyS3cr3ts!",
-		Scope:        "key",
-		TenantID:     1,
+		Issuer:         endpoints.BaseURL,
+		ClientID:       "client",
+		ClientSecret:   uuid.New().String(),
+		UserName:       "jane.doe",
+		Password:       "tooManyS3cr3ts!",
+		Scope:          "key",
+		HeaderTenantID: headerTenantID,
+		TenantID:       1,
 	}
 
 	kmsClient := newClientWithMockServer(credentials, endpoints, mockServer.Client())
@@ -250,13 +253,14 @@ func TestEncryptWithTimeout(t *testing.T) {
 			}
 
 			credentials := credentials.Config{
-				Issuer:       endpoints.BaseURL,
-				ClientID:     "client",
-				ClientSecret: uuid.New().String(),
-				UserName:     "jane.doe",
-				Password:     "tooManyS3cr3ts!",
-				Scope:        "key",
-				TenantID:     1,
+				Issuer:         endpoints.BaseURL,
+				ClientID:       "client",
+				ClientSecret:   uuid.New().String(),
+				UserName:       "jane.doe",
+				Password:       "tooManyS3cr3ts!",
+				Scope:          "key",
+				HeaderTenantID: "Abp.TenantId",
+				TenantID:       1,
 			}
 
 			eInput := &EncryptInput{

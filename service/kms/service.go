@@ -1,6 +1,7 @@
 package kms
 
 import (
+	"github.com/duokey/duokey-sdk-go/duokey"
 	"github.com/duokey/duokey-sdk-go/duokey/client"
 	"github.com/duokey/duokey-sdk-go/duokey/credentials"
 )
@@ -19,9 +20,14 @@ type Endpoints struct {
 	DecryptRoute string
 }
 
-// New checks the credentials and returns a KMS client.
-func New(credentials credentials.Config, endpoints Endpoints) (*KMS, error) {
-	client, err := client.New(credentials)
+// New checks the credentials and returns a KMS client with the default logger.
+func NewClient(credentials credentials.Config, endpoints Endpoints) (*KMS, error) {
+	return NewClientWithLogger(credentials, endpoints, nil)
+}
+
+// New checks the credentials and returns a KMS client with a custom logger.
+func NewClientWithLogger(credentials credentials.Config, endpoints Endpoints, logger duokey.Logger) (*KMS, error) {
+	client, err := client.New(credentials, logger)
 	if err != nil {
 		return nil, err
 	}
