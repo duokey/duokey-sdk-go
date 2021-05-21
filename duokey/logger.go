@@ -6,14 +6,19 @@ import (
 	"os"
 )
 
-// Logger is a generic logging interface. HashiCorp go-hclog logger, Zap SugaredLogger,
+// Logger is a generic logging interface. Zap SugaredLogger
 // and Logrus automatically implement this interface
 type Logger interface {
+	Info(...interface{})
 	Infof(string, ...interface{})
 }
 
 type defaultLogger struct {
 	logger *log.Logger
+}
+
+func (dl defaultLogger) Info(args ...interface{}) {
+	dl.logger.Output(2, fmt.Sprint(args...))
 }
 
 func (dl defaultLogger) Infof(format string, args ...interface{}) {
