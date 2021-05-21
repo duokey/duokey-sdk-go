@@ -69,7 +69,7 @@ func New(creds credentials.Config, logger duokey.Logger) (*Client, error) {
 	// Logger
 	if logger == nil {
 		clientConfig.Logger = duokey.NewDefaultLogger()
-		clientConfig.Logger.Info("Default logger")
+		clientConfig.Logger.Infof("Default logger")
 	} else {
 		clientConfig.Logger = logger
 	}
@@ -94,7 +94,7 @@ func New(creds credentials.Config, logger duokey.Logger) (*Client, error) {
 	// Password credentials call
 	token, err := oauth2Config.PasswordCredentialsToken(ctx, creds.UserName, creds.Password)
 	if err != nil {
-		clientConfig.Logger.Info("could not get the token")
+		clientConfig.Logger.Infof("could not get the token")
 		return nil, err
 	}
 
