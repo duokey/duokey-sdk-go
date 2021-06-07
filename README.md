@@ -23,6 +23,31 @@ The metadata of the SDK dependencies can be found in the Go module file [`go.mod
 
 ### Example
 
+Define the following environment variables:
+
+| Envirnment variable | Description |
+|--- |--- |
+| DUOKEY_ISSUER | The named external system that provides identity and API access by issuing an OAuth access token |
+| DUOKEY_CLIENT_ID | The client id for credentials to query the DuoKey API |
+| DUOKEY_CLIENT_SECRET | The client secret for credentials to query the DuoKey API |
+| DUOKEY_VAULT_ID | The vault to use for encryption and decryption |
+| DUOKEY_KEY_ID | The DuoKey key ID to use for encryption and decryption |
+| DUOKEY_HEADER_TENANT_ID | |
+| DUOKEY_TENANT_ID | The tenant id for the DuoKey organization |
+| DUOKEY_USERNAME | The username |
+| DUOKEY_PASSWORD | The password |
+| DUOKEY_SCOPE | The scope of the token |
+| DUOKEY_BASE_URL | The base URL of the DuoKey API |
+| DUOKEY_ENCRYPT_ROUTE | The DuoKey API route to be used to make an encryption request |
+| DUOKEY_DECRYPT_ROUTE | The DuoKey API route to be used to make a decryption request |
+
+Run the example:
+
+```bash
+cd examples/kms
+go run main.go
+```
+
 ## License
 
 This project is distributed under the terms of the Mozilla Public License (MPL) 2.0, see [LICENSE](LICENSE) for details.
