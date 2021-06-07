@@ -22,11 +22,13 @@ type Client struct {
 	Config duokey.Config
 }
 
+// Wrap http.RoundTripper to log HTTP requests
 type transportWithLogger struct {
 	Transport http.RoundTripper
 	Logger    duokey.Logger
 }
 
+// Ensure that transportWithLogger implements the http.RoundTripper interface
 var _ http.RoundTripper = (*transportWithLogger)(nil)
 
 func (twl *transportWithLogger) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -69,7 +71,6 @@ func New(creds credentials.Config, logger duokey.Logger) (*Client, error) {
 	// Logger
 	if logger == nil {
 		clientConfig.Logger = duokey.NewDefaultLogger()
-		clientConfig.Logger.Infof("Default logger")
 	} else {
 		clientConfig.Logger = logger
 	}
@@ -77,7 +78,7 @@ func New(creds credentials.Config, logger duokey.Logger) (*Client, error) {
 	// Read the discovery document
 	oauth2Config, err := credentials.GetOauth2Config(creds)
 	if err != nil {
-		logger.Infof("could not read the token and authorization URLs from the discovery document:%v", err)
+		clientConfig.Logger.Infof("could not read the token and authorization URLs from the discovery document: %v", err)
 		return nil, err
 	}
 
@@ -94,13 +95,13 @@ func New(creds credentials.Config, logger duokey.Logger) (*Client, error) {
 	// Password credentials call
 	token, err := oauth2Config.PasswordCredentialsToken(ctx, creds.UserName, creds.Password)
 	if err != nil {
-		clientConfig.Logger.Infof("could not get the token")
+		clientConfig.Logger.Infof("could not get the token: %v", err)
 		return nil, err
 	}
 
 	// Token validation
 	if !token.Valid() {
-		return nil, fmt.Errorf("Failed to check the token")
+		return nil, fmt.Errorf("failed to check the token")
 	}
 
 	if token.TokenType != "Bearer" {

@@ -45,7 +45,7 @@ func New(config duokey.Config, operation *Operation, params interface{}, respons
 	httpReq, _ := http.NewRequest(http.MethodPost, "", nil)
 
 	if operation == nil {
-		err = fmt.Errorf("Operation not defined")
+		err = fmt.Errorf("operation not defined")
 		goto buildrequest
 	}
 
@@ -60,7 +60,7 @@ func New(config duokey.Config, operation *Operation, params interface{}, respons
 		http.MethodPut:
 		httpReq.Method = operation.HTTPMethod
 	default:
-		err = fmt.Errorf("Unknown HTTP method: %s", operation.HTTPMethod)
+		err = fmt.Errorf("unknown HTTP method: %s", operation.HTTPMethod)
 		goto buildrequest
 	}
 

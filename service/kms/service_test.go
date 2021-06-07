@@ -49,7 +49,7 @@ func mockDecrypt(body []byte) ([]byte, error) {
 		Result: struct {
 			KeyID     string `json:"keyid" validate:"nonzero"`
 			Algorithm string `json:"algorithm"`
-			Payload   []byte `json:"payload"`
+			Payload   []byte `json:"payload" validate:"nonzero"`
 			ID        uint32 `json:"id"`
 		}{
 			KeyID:   jsonData.KeyID,
@@ -78,7 +78,7 @@ func mockEncrypt(body []byte) ([]byte, error) {
 		Result: struct {
 			KeyID     string `json:"keyid" validate:"nonzero"`
 			Algorithm string `json:"algorithm"`
-			Payload   []byte `json:"payload"`
+			Payload   []byte `json:"payload" validate:"nonzero"`
 			ID        uint32 `json:"id"`
 		}{
 			KeyID:   jsonData.KeyID,
@@ -167,7 +167,7 @@ func TestEncryptDecrypt(t *testing.T) {
 	eInput := &EncryptInput{
 		KeyID:   uuid.New().String(),
 		VaultID: uuid.New().String(),
-		Payload: []byte("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."),
+		Payload: []byte("Lorem ipsum"),
 	}
 
 	eOutput, err := kmsClient.Encrypt(eInput)

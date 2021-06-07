@@ -47,7 +47,7 @@ func getConfig() {
 
 	switch {
 	case os.Getenv("DUOKEY_CLIENT_ID") != "":
-		clientSecret = os.Getenv("DUOKEY_CLIENT_ID")
+		clientID = os.Getenv("DUOKEY_CLIENT_ID")
 	default:
 		fmt.Println("DUOKEY_CLIENT_ID is not defined")
 		os.Exit(1)
@@ -55,7 +55,7 @@ func getConfig() {
 
 	switch {
 	case os.Getenv("DUOKEY_CLIENT_SECRET") != "":
-		clientID = os.Getenv("DUOKEY_CLIENT_SECRET")
+		clientSecret = os.Getenv("DUOKEY_CLIENT_SECRET")
 	default:
 		fmt.Println("DUOKEY_CLIENT_SECRET is not defined")
 		os.Exit(1)

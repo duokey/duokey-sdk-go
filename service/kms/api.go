@@ -31,9 +31,9 @@ type EncryptOutput struct {
 	Result  struct {
 		KeyID     string `json:"keyid" validate:"nonzero"`
 		Algorithm string `json:"algorithm"`
-		Payload   []byte `json:"payload"`
+		Payload   []byte `json:"payload" validate:"nonzero"`
 		ID        uint32 `json:"id"`
-	} `json:"result"`
+	} `json:"result" validate:"nonzero"`
 	TargetURL           *string `json:"targetUrl"`
 	Error               *string `json:"error"`
 	UnauthorizedRequest bool    `json:"unAuthorizedRequest"`
@@ -98,9 +98,9 @@ type DecryptOutput struct {
 	Result  struct {
 		KeyID     string `json:"keyid" validate:"nonzero"`
 		Algorithm string `json:"algorithm"`
-		Payload   []byte `json:"payload"`
+		Payload   []byte `json:"payload" validate:"nonzero"`
 		ID        uint32 `json:"id"`
-	} `json:"result"`
+	} `json:"result" validate:"nonzero"`
 	TargetURL           *string `json:"targetUrl"`
 	Error               *string `json:"error"`
 	UnauthorizedRequest bool    `json:"unAuthorizedRequest"`
