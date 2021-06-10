@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 )
 
 // Logger is a generic logging interface. Zap SugaredLogger
@@ -11,6 +12,10 @@ import (
 type Logger interface {
 	Info(...interface{})
 	Infof(string, ...interface{})
+}
+
+func LogExecutionTime(logger Logger, msg string, start time.Time) {
+	logger.Infof("%s: %s", msg, time.Since(start))
 }
 
 type defaultLogger struct {

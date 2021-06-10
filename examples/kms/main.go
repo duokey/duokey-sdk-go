@@ -214,10 +214,6 @@ func main() {
 		fmt.Println("Error:", err.Error())
 		os.Exit(1)
 	}
-	fmt.Println(string(ip))
-
-	// Start timer
-	defer timeTrack(time.Now())
 
 	// Encryption
 	eInput := &kms.EncryptInput{
@@ -241,6 +237,10 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Millisecond*10000))
 	defer cancel()
 
+	// Start timer
+	defer timeTrack(time.Now())
+
+	fmt.Println("Encryption request")
 	eOutput, err := vaultClient.EncryptWithContext(ctx, eInput)
 	if err != nil {
 		fmt.Println("Encryption request failed:", err.Error())
@@ -256,6 +256,7 @@ func main() {
 		Payload:   eOutput.Result.Payload,
 	}
 
+	fmt.Println("Decryption request")
 	dOutput, err := vaultClient.Decrypt(dInput)
 	if err != nil {
 		fmt.Println("Decryption request failed:", err.Error())
@@ -263,5 +264,5 @@ func main() {
 	}
 
 	fmt.Println("Success:", dOutput.Success)
-	fmt.Println(string(dOutput.Result.Payload))
+	fmt.Println("Decrypted payload: " + string(dOutput.Result.Payload))
 }

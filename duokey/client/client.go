@@ -15,6 +15,8 @@ import (
 
 const (
 	httpClientTimeout time.Duration = time.Second * 10
+	context_api_id    string        = "appid"
+	context_tenant_id string        = "tenantid"
 )
 
 // Client implements the base client request and response handling. All
@@ -36,7 +38,8 @@ func (twl *transportWithLogger) RoundTrip(req *http.Request) (*http.Response, er
 
 	// Start the timer and log the event
 	start := time.Now()
-	defer twl.Logger.Infof("request to %v took %s", req.URL, time.Since(start))
+	msg := fmt.Sprintf("request to %v", req.URL)
+	defer duokey.LogExecutionTime(twl.Logger, msg, start)
 
 	// Send the request
 	return twl.Transport.RoundTrip(req)
@@ -58,7 +61,8 @@ var _ http.RoundTripper = (*duoKeyTransport)(nil)
 func (t *duoKeyTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	req.Header.Set(t.HeaderTenantID, fmt.Sprint(t.TenantID))
 	start := time.Now()
-	defer t.Logger.Infof("request to %v took %s", req.URL, time.Since(start))
+	msg := fmt.Sprintf("request to %v", req.URL)
+	defer duokey.LogExecutionTime(t.Logger, msg, start)
 
 	return http.DefaultTransport.RoundTrip(req)
 }
@@ -129,18 +133,19 @@ func New(creds credentials.Config, logger duokey.Logger) (*Client, error) {
 	return client, nil
 }
 
-// NewRequest returns a request pointer, The tenant ID is added to the HTTP header.
+// NewRequest returns a request pointer. The tenant ID is added to the HTTP header.
 func (c *Client) NewRequest(operation *request.Operation, params interface{}, data interface{}) *request.Request {
 
 	return request.New(c.Config, operation, params, data)
 }
 
-// GetMinimalContext returns a map storing the context information required by the DuoKey server
+// GetMandatoryContext returns a map storing the context required by the DuoKey server. At the moment, this function is
+// called by encryptRequest and decryptRequest.
 func (c *Client) GetMandatoryContext() map[string]string {
 	context := make(map[string]string)
 
-	context["appid"] = c.Config.Credentials.AppID
-	context["tenantid"] = strconv.Itoa(int(c.Config.Credentials.TenantID))
+	context[context_api_id] = c.Config.Credentials.AppID
+	context[context_tenant_id] = strconv.Itoa(int(c.Config.Credentials.TenantID))
 
 	return context
 }
