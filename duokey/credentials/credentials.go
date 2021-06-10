@@ -10,6 +10,7 @@ import (
 // Config stores the user's credentials
 type Config struct {
 	Issuer         string // URL identifier for the service
+	AppID          string
 	ClientID       string
 	ClientSecret   string
 	UserName       string

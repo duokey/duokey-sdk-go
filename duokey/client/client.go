@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/duokey/duokey-sdk-go/duokey"
@@ -132,4 +133,14 @@ func New(creds credentials.Config, logger duokey.Logger) (*Client, error) {
 func (c *Client) NewRequest(operation *request.Operation, params interface{}, data interface{}) *request.Request {
 
 	return request.New(c.Config, operation, params, data)
+}
+
+// GetMinimalContext returns a map storing the context information required by the DuoKey server
+func (c *Client) GetMandatoryContext() map[string]string {
+	context := make(map[string]string)
+
+	context["appid"] = c.Config.Credentials.AppID
+	context["tenantid"] = strconv.Itoa(int(c.Config.Credentials.TenantID))
+
+	return context
 }

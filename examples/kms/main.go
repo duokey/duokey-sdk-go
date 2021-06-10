@@ -179,6 +179,7 @@ func main() {
 	getConfig()
 
 	credentials := credentials.Config{
+		AppID:          appID,
 		Issuer:         issuer,
 		ClientID:       clientID,
 		ClientSecret:   clientSecret,
@@ -213,6 +214,7 @@ func main() {
 		fmt.Println("Error:", err.Error())
 		os.Exit(1)
 	}
+	fmt.Println(string(ip))
 
 	// Start timer
 	defer timeTrack(time.Now())
@@ -223,14 +225,17 @@ func main() {
 		VaultID:   vaultID,
 		ID:        0,
 		Algorithm: "3",
-		Context: map[string]string{
-			"appid":  appID,
-			"ipaddr": string(ip),
-			"http://schemas.microsoft.com/identity/claims/tenantid":     strconv.Itoa(int(tenantID)),
-			"http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn": upn,
-		},
+		// Context: map[string]string{
+		// 	"appid":  appID,
+		// 	"ipaddr": string(ip),
+		// 	"http://schemas.microsoft.com/identity/claims/tenantid":     strconv.Itoa(int(tenantID)),
+		// 	"http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn": upn,
+		// },
 		Payload: []byte("Lorem ipsum dolor sit amet"),
 	}
+
+	eInput.Context = make(map[string]string)
+	eInput.Context["ipaddr"] = string(ip)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Millisecond*10000))
 	defer cancel()

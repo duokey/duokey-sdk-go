@@ -71,6 +71,16 @@ func (k *KMS) encryptRequest(input *EncryptInput) (req *request.Request, output 
 		input = &EncryptInput{}
 	}
 
+	// Create an empty context if needed
+	if input.Context == nil {
+		input.Context = make(map[string]string)
+	}
+
+	// Merge the input context and the mandatory context
+	for key, value := range k.Client.GetMandatoryContext() {
+		input.Context[key] = value
+	}
+
 	output = &EncryptOutput{}
 	req = k.NewRequest(op, input, output)
 
@@ -136,6 +146,16 @@ func (k *KMS) decryptRequest(input *DecryptInput) (req *request.Request, output 
 
 	if input == nil {
 		input = &DecryptInput{}
+	}
+
+	// Create an empty context if needed
+	if input.Context == nil {
+		input.Context = make(map[string]string)
+	}
+
+	// Merge the input context and the mandatory context
+	for key, value := range k.Client.GetMandatoryContext() {
+		input.Context[key] = value
 	}
 
 	output = &DecryptOutput{}
