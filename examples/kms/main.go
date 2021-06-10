@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"os"
 	"strconv"
 	"time"
@@ -12,7 +14,11 @@ import (
 )
 
 var (
+	// Application
+	appID string
+
 	// Credentials
+	upn            string
 	issuer         string
 	clientID       string
 	clientSecret   string
@@ -37,6 +43,22 @@ func timeTrack(start time.Time) {
 }
 
 func getConfig() {
+	switch {
+	case os.Getenv("DUOKEY_APP_ID") != "":
+		appID = os.Getenv("DUOKEY_APP_ID")
+	default:
+		fmt.Println("DUOKEY_APP_ID is not defined")
+		os.Exit(1)
+	}
+
+	switch {
+	case os.Getenv("DUOKEY_UPN") != "":
+		upn = os.Getenv("DUOKEY_UPN")
+	default:
+		fmt.Println("DUOKEY_UPN is not defined")
+		os.Exit(1)
+	}
+
 	switch {
 	case os.Getenv("DUOKEY_ISSUER") != "":
 		issuer = os.Getenv("DUOKEY_ISSUER")
@@ -179,6 +201,19 @@ func main() {
 		os.Exit(1)
 	}
 
+	resp, err := http.Get("https://api.ipify.org?format=text")
+	if err != nil {
+		fmt.Println("Error:", err.Error())
+		os.Exit(1)
+	}
+	defer resp.Body.Close()
+
+	ip, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println("Error:", err.Error())
+		os.Exit(1)
+	}
+
 	// Start timer
 	defer timeTrack(time.Now())
 
@@ -188,7 +223,13 @@ func main() {
 		VaultID:   vaultID,
 		ID:        0,
 		Algorithm: "3",
-		Payload:   []byte("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."),
+		Context: map[string]string{
+			"appid":  appID,
+			"ipaddr": string(ip),
+			"http://schemas.microsoft.com/identity/claims/tenantid":     strconv.Itoa(int(tenantID)),
+			"http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn": upn,
+		},
+		Payload: []byte("Lorem ipsum dolor sit amet"),
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Millisecond*10000))
@@ -196,7 +237,7 @@ func main() {
 
 	eOutput, err := vaultClient.EncryptWithContext(ctx, eInput)
 	if err != nil {
-		fmt.Println("Error:", err.Error())
+		fmt.Println("Encryption request failed:", err.Error())
 		os.Exit(1)
 	}
 
@@ -211,7 +252,7 @@ func main() {
 
 	dOutput, err := vaultClient.Decrypt(dInput)
 	if err != nil {
-		fmt.Println("Error:", err.Error())
+		fmt.Println("Decryption request failed:", err.Error())
 		os.Exit(1)
 	}
 
