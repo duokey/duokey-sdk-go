@@ -236,6 +236,7 @@ func main() {
 
 	eInput.Context = make(map[string]string)
 	eInput.Context["ipaddr"] = string(ip)
+	eInput.Context["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn"] = upn
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Millisecond*10000))
 	defer cancel()

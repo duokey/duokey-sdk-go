@@ -27,6 +27,8 @@ Define the following environment variables:
 
 | Envirnment variable | Description |
 |--- |--- |
+| DUOKEY_APP_ID | The application ID |
+| DUOKEY_UPN | The user principal name |
 | DUOKEY_ISSUER | The named external system that provides identity and API access by issuing an OAuth access token |
 | DUOKEY_CLIENT_ID | The client id for credentials to query the DuoKey API |
 | DUOKEY_CLIENT_SECRET | The client secret for credentials to query the DuoKey API |
