@@ -9,15 +9,15 @@ import (
 
 // Config stores the user's credentials
 type Config struct {
-	Issuer         string // URL identifier for the service
-	AppID          string
-	ClientID       string
-	ClientSecret   string
-	UserName       string
-	Password       string
-	Scope          string
-	HeaderTenantID string
-	TenantID       uint32
+	Issuer         string `mapstructure:"issuer"` // URL identifier for the service
+	AppID          string `mapstructure:"app-id"`
+	ClientID       string `mapstructure:"client-id"`
+	ClientSecret   string `mapstructure:"client-secret"`
+	UserName       string `mapstructure:"username"`
+	Password       string `mapstructure:"password"`
+	Scope          string `mapstructure:"scope"`
+	HeaderTenantID string `mapstructure:"header-tenant-id"`
+	TenantID       uint32 `mapstructure:"tenant-id"`
 }
 
 // GetOauth2Config reads the token and authorization URLs from a discovery document
