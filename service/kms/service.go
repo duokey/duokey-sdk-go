@@ -18,6 +18,7 @@ type Endpoints struct {
 	BaseURL      string
 	EncryptRoute string
 	DecryptRoute string
+	ImportRoute  string
 }
 
 // New checks the credentials and returns a KMS client with the default logger.
@@ -31,6 +32,6 @@ func NewClientWithLogger(credentials credentials.Config, endpoints Endpoints, lo
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return &KMS{Client: client, Endpoints: &endpoints}, nil
 }

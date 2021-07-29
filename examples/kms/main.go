@@ -32,6 +32,7 @@ var (
 	baseURL      string
 	encryptRoute string
 	decryptRoute string
+	importRoute  string
 
 	// Vault and key
 	vaultID string
@@ -157,6 +158,14 @@ func getConfig() {
 	}
 
 	switch {
+	case os.Getenv("DUOKEY_IMPORT_ROUTE") != "":
+		importRoute = os.Getenv("DUOKEY_IMPORT_ROUTE")
+	default:
+		fmt.Println("DUOKEY_IMPORT_ROUTE is not defined")
+		os.Exit(1)
+	}
+
+	switch {
 	case os.Getenv("DUOKEY_VAULT_ID") != "":
 		vaultID = os.Getenv("DUOKEY_VAULT_ID")
 	default:
@@ -194,6 +203,7 @@ func main() {
 		BaseURL:      baseURL,
 		EncryptRoute: encryptRoute,
 		DecryptRoute: decryptRoute,
+		ImportRoute: importRoute,
 	}
 
 	vaultClient, err := kms.NewClient(credentials, endpoints)

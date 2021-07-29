@@ -7,6 +7,71 @@ import (
 	"github.com/duokey/duokey-sdk-go/duokey/request"
 )
 
+// Import
+const opImport = "Import"
+
+type ImportInput struct {
+	ID      uint32            `json:"id"`
+	VaultID string            `json:"vaultid" validate:"nonzero"`
+	Context map[string]string `json:"context,omitempty"`
+	Payload []byte            `json:"payload"`
+}
+
+type ImportOutput struct {
+	Success bool `json:"success"`
+	Result  struct {
+		KeyID string `json:"keyid" validate:"nonzero"`
+		KCV   string `json:"kcv"`
+		ID    uint32 `json:"id"`
+	} `json:"result" validate:"nonzero"`
+	TargetURL           *string `json:"targetUrl"`
+	Error               *string `json:"error"`
+	UnauthorizedRequest bool    `json:"unAuthorizedRequest"`
+	ABP                 bool    `json:"__abp"`
+}
+
+func (k *KMS) Import(input *ImportInput) (*ImportOutput, error) {
+	req, out := k.importRequest(input)
+
+	return out, req.Send()
+}
+
+func (k *KMS) ImportWithContext(ctx context.Context, input *ImportInput) (*ImportOutput, error) {
+	req, out := k.importRequest(input)
+	req.SetContext(ctx)
+
+	return out, req.Send()
+}
+
+func (k *KMS) importRequest(input *ImportInput) (req *request.Request, output *ImportOutput) {
+
+	op := &request.Operation{
+		Name:       opImport,
+		HTTPMethod: http.MethodPost,
+		BaseURL:    k.Endpoints.BaseURL,
+		Route:      k.Endpoints.ImportRoute,
+	}
+
+	if input == nil {
+		input = &ImportInput{}
+	}
+
+	// Create an empty context if needed
+	if input.Context == nil {
+		input.Context = make(map[string]string)
+	}
+
+	// Merge the input context and the mandatory context
+	for key, value := range k.Client.GetMandatoryContext() {
+		input.Context[key] = value
+	}
+
+	output = &ImportOutput{}
+	req = k.NewRequest(op, input, output)
+
+	return
+}
+
 // Encryption
 const opEncrypt = "Encrypt"
 

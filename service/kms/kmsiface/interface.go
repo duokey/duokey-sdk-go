@@ -9,6 +9,8 @@ import (
 // KMSAPI provides an interface to enable mocking the kms.KMS service
 // client's API calls. This makes unit testing easier.
 type KMSAPI interface {
+	Import(*kms.ImportInput) (*kms.ImportOutput, error)
+	ImportWithContext(context.Context, *kms.ImportInput) (*kms.ImportOutput, error)
 	Encrypt(*kms.EncryptInput) (*kms.EncryptOutput, error)
 	EncryptWithContext(context.Context, *kms.EncryptInput) (*kms.EncryptOutput, error)
 	Decrypt(*kms.DecryptInput) (*kms.DecryptOutput, error)
