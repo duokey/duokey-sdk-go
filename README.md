@@ -20,6 +20,18 @@ go get github.com/duokey/duokey-sdk-go
 ### Dependencies
 
 The metadata of the SDK dependencies can be found in the Go module file [`go.mod`](go.mod).
+### Sample CreateEncryptRequest
+
+{
+  "keyid": "2e974659-64e8-4e8a-b702-c5133620bd0f",
+  "vaultid": "1ac93d40-69c2-4f69-6034-08d8d6af37bc",
+  "payload": "DFGVzLO1Q9j7a3pPWo4L+Q9Ku670XptGP7pXKpvryMtoRHESgbLaZrc0HVew1loviLxMceMUSKPz85wpKIIos8JfSIgLYDnCCRnMDtf2vS2IXUwrW+/KZJRdsr2OyzAQzxGsOrVmLRQNctj9/VH+cbZWlxbgzlFnLayxS2VQvd3OLKC+J8J2Xx6LvD5Uzry3R14VGHh/8eaXfGzGMox2GzV40BrqCJIDB8t5T4QIHUHqGhhJt70VPUTGwf6XsSg55BFZVCVOvj8g/YhVS2dsvsNeL4rEe1k6myQeGo/VhYIHYYY3WLIAIsY4sNsljfiFyWZHn3nvqnLQpxbJDuCKOw==",
+  "algorithm": "3",
+   "context": {
+    "appid": "87c3ab90-793b-7733-6060-1329a75f6b06",
+    "ttp://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn": "nagib.aouini@duokey.ch"
+}
+}
 
 ### Example
 
