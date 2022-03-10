@@ -21,7 +21,7 @@ go get github.com/duokey/duokey-sdk-go
 
 The metadata of the SDK dependencies can be found in the Go module file [`go.mod`](go.mod).
 ### Sample CreateEncryptRequest
-
+```bash
 {
   "keyid": "2e974659-64e8-4e8a-b702-c5133620bd0f",
   "vaultid": "1ac93d40-69c2-4f69-6034-08d8d6af37bc",
@@ -32,7 +32,7 @@ The metadata of the SDK dependencies can be found in the Go module file [`go.mod
     "ttp://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn": "nagib.aouini@duokey.ch"
 }
 }
-
+```
 ### Example
 
 Define the following environment variables:
