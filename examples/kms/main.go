@@ -203,7 +203,7 @@ func main() {
 		BaseURL:      baseURL,
 		EncryptRoute: encryptRoute,
 		DecryptRoute: decryptRoute,
-		ImportRoute: importRoute,
+		ImportRoute:  importRoute,
 	}
 
 	vaultClient, err := kms.NewClient(credentials, endpoints)
@@ -237,11 +237,12 @@ func main() {
 		// 	"http://schemas.microsoft.com/identity/claims/tenantid":     strconv.Itoa(int(tenantID)),
 		// 	"http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn": upn,
 		// },
-		Payload: []byte("Lorem ipsum dolor sit amet"),
+		Payload: []byte("TG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQ="),
 	}
 
 	eInput.Context = make(map[string]string)
 	eInput.Context["ipaddr"] = string(ip)
+	eInput.Context["appid"] = appID // appid Added As It Is Mandatory
 	eInput.Context["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn"] = upn
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Millisecond*10000))
@@ -265,6 +266,10 @@ func main() {
 		Algorithm: "3",
 		Payload:   eOutput.Result.Payload,
 	}
+
+	// Context Information Added As It Is Mandatory
+	dInput.Context = make(map[string]string)
+	dInput.Context["appid"] = appID
 
 	fmt.Println("Decryption request")
 	dOutput, err := vaultClient.Decrypt(dInput)

@@ -96,7 +96,7 @@ type EncryptOutput struct {
 	Result  struct {
 		KeyID     string `json:"keyid" validate:"nonzero"`
 		Algorithm string `json:"algorithm"`
-		Payload   []byte `json:"payload" validate:"nonzero"`
+		Payload   string `json:"payload" validate:"nonzero"`
 		ID        uint32 `json:"id"`
 	} `json:"result" validate:"nonzero"`
 	TargetURL           *string `json:"targetUrl"`
@@ -163,7 +163,7 @@ type DecryptInput struct {
 	VaultID   string            `json:"vaultid" validate:"nonzero"`
 	Algorithm string            `json:"algorithm,omitempty"`
 	Context   map[string]string `json:"context,omitempty"`
-	Payload   []byte            `json:"payload"`
+	Payload   string            `json:"payload"`
 }
 
 // DecryptOutput contains the deserialized payload returned by the DuoKey server.
