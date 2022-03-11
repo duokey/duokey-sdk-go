@@ -29,10 +29,11 @@ var (
 	headerTenantID string
 
 	// Encryption/decryption client
-	baseURL      string
-	encryptRoute string
-	decryptRoute string
-	importRoute  string
+	baseURL       string
+	encryptRoute  string
+	decryptRoute  string
+	importRoute   string
+	getKeyIdRoute string
 
 	// Vault and key
 	vaultID string
@@ -166,6 +167,14 @@ func getConfig() {
 	}
 
 	switch {
+	case os.Getenv("DUOKEY_GETKEYID_ROUTE") != "":
+		getKeyIdRoute = os.Getenv("DUOKEY_GETKEYID_ROUTE")
+	default:
+		fmt.Println("DUOKEY_GETKEYID_ROUTE is not defined")
+		os.Exit(1)
+	}
+
+	switch {
 	case os.Getenv("DUOKEY_VAULT_ID") != "":
 		vaultID = os.Getenv("DUOKEY_VAULT_ID")
 	default:
@@ -200,10 +209,11 @@ func main() {
 	}
 
 	endpoints := kms.Endpoints{
-		BaseURL:      baseURL,
-		EncryptRoute: encryptRoute,
-		DecryptRoute: decryptRoute,
-		ImportRoute:  importRoute,
+		BaseURL:       baseURL,
+		EncryptRoute:  encryptRoute,
+		DecryptRoute:  decryptRoute,
+		ImportRoute:   importRoute,
+		GetKeyIdRoute: getKeyIdRoute,
 	}
 
 	vaultClient, err := kms.NewClient(credentials, endpoints)
@@ -280,4 +290,17 @@ func main() {
 
 	fmt.Println("Success:", dOutput.Success)
 	fmt.Println("Decrypted payload: " + string(dOutput.Result.Payload))
+
+	// Get Key Id
+	getKeyInput := &kms.GetKeyIdInput{
+		ExternalID: keyID,
+	}
+
+	keyOutput, err := vaultClient.GetKeyIdWithContext(ctx, getKeyInput)
+	fmt.Println("ip :: ", string(ip))
+	fmt.Println("keyOutput.Result.Key.Name :: ", keyOutput.Result.Key.Name)
+	if err != nil {
+		fmt.Println("GetKeyId request failed:", err.Error())
+		os.Exit(1)
+	}
 }
