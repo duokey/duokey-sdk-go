@@ -8,7 +8,7 @@ require (
 	github.com/google/uuid v1.2.0
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.5.1
-	golang.org/x/net v0.7.0 // indirect
+	golang.org/x/net v0.17.0 // indirect
 	golang.org/x/oauth2 v0.0.0-20210210192628-66670185b0cd
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	gopkg.in/validator.v2 v2.0.0-20210331031555-b37d688a7fb0
