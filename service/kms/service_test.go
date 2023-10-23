@@ -78,13 +78,13 @@ func mockEncrypt(body []byte) ([]byte, error) {
 	output := EncryptOutput{
 		Success: true,
 		Result: struct {
-			KeyID     string `json:"keyid" validate:"nonzero"`
-			Algorithm string `json:"algorithm"`
-			Payload   string `json:"payload" validate:"nonzero"`
-			ID        uint32 `json:"id"`
+			KeyID            string `json:"keyid" validate:"nonzero"`
+			Algorithm        string `json:"algorithm"`
+			EncryptedPayload string `json:"encryptedPayload" validate:"nonzero"`
+			ID               uint32 `json:"id"`
 		}{
-			KeyID:   jsonData.KeyID,
-			Payload: string(jsonData.Payload),
+			KeyID:            jsonData.KeyID,
+			EncryptedPayload: string(jsonData.Payload),
 		},
 	}
 
@@ -180,7 +180,7 @@ func TestEncryptDecrypt(t *testing.T) {
 	dInput := &DecryptInput{
 		KeyID:   eOutput.Result.KeyID,
 		VaultID: eInput.VaultID,
-		Payload: eOutput.Result.Payload,
+		Payload: eOutput.Result.EncryptedPayload,
 	}
 
 	dOutput, err := kmsClient.Decrypt(dInput)
@@ -292,9 +292,9 @@ func TestEncryptWithTimeout(t *testing.T) {
 				}
 			} else {
 				if err != nil {
-					t.Errorf("Unexpected error: %w", err)
+					t.Errorf("Unexpected error: " + err.Error())
 				} else {
-					assert.Equal(t, []byte("TG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQsIGNvbnNlY3RldHVyIGFkaXBpc2NpbmcgZWxpdCwgc2VkIGRvIGVpdXNtb2QgdGVtcG9yIGluY2lkaWR1bnQgdXQgbGFib3JlIGV0IGRvbG9yZSBtYWduYSBhbGlxdWEu"), eOutput.Result.Payload)
+					assert.Equal(t, []byte("TG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQsIGNvbnNlY3RldHVyIGFkaXBpc2NpbmcgZWxpdCwgc2VkIGRvIGVpdXNtb2QgdGVtcG9yIGluY2lkaWR1bnQgdXQgbGFib3JlIGV0IGRvbG9yZSBtYWduYSBhbGlxdWEu"), eOutput.Result.EncryptedPayload)
 				}
 			}
 		})
