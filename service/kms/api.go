@@ -95,10 +95,10 @@ type EncryptInput struct {
 type EncryptOutput struct {
 	Success bool `json:"success"`
 	Result  struct {
-		KeyID     string `json:"keyid" validate:"nonzero"`
-		Algorithm string `json:"algorithm"`
-		Payload   string `json:"payload" validate:"nonzero"`
-		ID        uint32 `json:"id"`
+		KeyID            string `json:"keyid" validate:"nonzero"`
+		Algorithm        string `json:"algorithm"`
+		EncryptedPayload string `json:"encryptedPayload" validate:"nonzero"`
+		ID               uint32 `json:"id"`
 	} `json:"result" validate:"nonzero"`
 	TargetURL           *string `json:"targetUrl"`
 	Error               *string `json:"error"`

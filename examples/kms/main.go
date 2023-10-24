@@ -274,7 +274,7 @@ func main() {
 		VaultID:   vaultID,
 		ID:        0,
 		Algorithm: "3",
-		Payload:   eOutput.Result.Payload,
+		Payload:   eOutput.Result.EncryptedPayload,
 	}
 
 	// Context Information Added As It Is Mandatory
@@ -282,7 +282,8 @@ func main() {
 	dInput.Context["appid"] = appID
 
 	fmt.Println("Decryption request")
-	dOutput, err := vaultClient.Decrypt(dInput)
+	//dOutput, err := vaultClient.Decrypt(dInput)
+	dOutput, err := vaultClient.DecryptWithContext(ctx, dInput)
 	if err != nil {
 		fmt.Println("Decryption request failed:", err.Error())
 		os.Exit(1)
