@@ -192,6 +192,17 @@ func getConfig() {
 
 }
 
+/*
+* main() with an encrypt/decrypt example + getKeyID
+* The key is set in the DUOKEY_KEY_ID variable
+*	This code was tested with an RSA or AES key
+* For RSA operations:
+*	Algorithm: "3",
+*	Remarque: the algorithm can be a string, "3" is/was used for Sepior
+* For AES-GCM operations:
+*	Algorithm: "AES-GCM",
+*	And the Iv, received from the Encrypt operation, can be passed in the DecryptInput
+ */
 func main() {
 
 	getConfig()
@@ -235,12 +246,17 @@ func main() {
 		os.Exit(1)
 	}
 
+	// define the algorithm, according to the key
+	algorithm := "3"
+	// algorithm := "AES-GCM"
+
 	// Encryption
 	eInput := &kms.EncryptInput{
 		KeyID:     keyID,
 		VaultID:   vaultID,
 		ID:        0,
-		Algorithm: "3",
+		Algorithm: algorithm,
+		// The context can be set here, or here under as in this example
 		// Context: map[string]string{
 		// 	"appid":  appID,
 		// 	"ipaddr": string(ip),
@@ -273,8 +289,10 @@ func main() {
 		KeyID:     keyID,
 		VaultID:   vaultID,
 		ID:        0,
-		Algorithm: "3",
+		Algorithm: algorithm,
 		Payload:   eOutput.Result.EncryptedPayload,
+		// Iv needed only for AES-GCM decryption - will be an empty string for RSA operations and unused, but can be commented out
+		Iv: eOutput.Result.Iv,
 	}
 
 	// Context Information Added As It Is Mandatory
