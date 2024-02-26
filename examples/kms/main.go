@@ -29,10 +29,11 @@ var (
 	headerTenantID string
 
 	// Encryption/decryption client
-	baseURL      string
-	encryptRoute string
-	decryptRoute string
-	importRoute  string
+	baseURL       string
+	encryptRoute  string
+	decryptRoute  string
+	importRoute   string
+	getKeyIdRoute string
 
 	// Vault and key
 	vaultID string
@@ -166,6 +167,14 @@ func getConfig() {
 	}
 
 	switch {
+	case os.Getenv("DUOKEY_GETKEYID_ROUTE") != "":
+		getKeyIdRoute = os.Getenv("DUOKEY_GETKEYID_ROUTE")
+	default:
+		fmt.Println("DUOKEY_GETKEYID_ROUTE is not defined")
+		os.Exit(1)
+	}
+
+	switch {
 	case os.Getenv("DUOKEY_VAULT_ID") != "":
 		vaultID = os.Getenv("DUOKEY_VAULT_ID")
 	default:
@@ -183,6 +192,17 @@ func getConfig() {
 
 }
 
+/*
+* main() with an encrypt/decrypt example + getKeyID
+* The key is set in the DUOKEY_KEY_ID variable
+*	This code was tested with an RSA or AES key
+* For RSA operations:
+*	Algorithm: "3",
+*	Remarque: the algorithm can be a string, "3" is/was used for Sepior
+* For AES-GCM operations:
+*	Algorithm: "AES-GCM",
+*	And the Iv, received from the Encrypt operation, can be passed in the DecryptInput
+ */
 func main() {
 
 	getConfig()
@@ -200,10 +220,11 @@ func main() {
 	}
 
 	endpoints := kms.Endpoints{
-		BaseURL:      baseURL,
-		EncryptRoute: encryptRoute,
-		DecryptRoute: decryptRoute,
-		ImportRoute: importRoute,
+		BaseURL:       baseURL,
+		EncryptRoute:  encryptRoute,
+		DecryptRoute:  decryptRoute,
+		ImportRoute:   importRoute,
+		GetKeyIdRoute: getKeyIdRoute,
 	}
 
 	vaultClient, err := kms.NewClient(credentials, endpoints)
@@ -225,23 +246,29 @@ func main() {
 		os.Exit(1)
 	}
 
+	// define the algorithm, according to the key
+	algorithm := "3"
+	// algorithm := "AES-GCM"
+
 	// Encryption
 	eInput := &kms.EncryptInput{
 		KeyID:     keyID,
 		VaultID:   vaultID,
 		ID:        0,
-		Algorithm: "3",
+		Algorithm: algorithm,
+		// The context can be set here, or here under as in this example
 		// Context: map[string]string{
 		// 	"appid":  appID,
 		// 	"ipaddr": string(ip),
 		// 	"http://schemas.microsoft.com/identity/claims/tenantid":     strconv.Itoa(int(tenantID)),
 		// 	"http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn": upn,
 		// },
-		Payload: []byte("Lorem ipsum dolor sit amet"),
+		Payload: []byte("TG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQ="),
 	}
 
 	eInput.Context = make(map[string]string)
 	eInput.Context["ipaddr"] = string(ip)
+	eInput.Context["appid"] = appID // appid Added As It Is Mandatory
 	eInput.Context["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn"] = upn
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Millisecond*10000))
@@ -262,12 +289,19 @@ func main() {
 		KeyID:     keyID,
 		VaultID:   vaultID,
 		ID:        0,
-		Algorithm: "3",
-		Payload:   eOutput.Result.Payload,
+		Algorithm: algorithm,
+		Payload:   eOutput.Result.EncryptedPayload,
+		// Iv needed only for AES-GCM decryption - will be an empty string for RSA operations and unused, but can be commented out
+		Iv: eOutput.Result.Iv,
 	}
 
+	// Context Information Added As It Is Mandatory
+	dInput.Context = make(map[string]string)
+	dInput.Context["appid"] = appID
+
 	fmt.Println("Decryption request")
-	dOutput, err := vaultClient.Decrypt(dInput)
+	//dOutput, err := vaultClient.Decrypt(dInput)
+	dOutput, err := vaultClient.DecryptWithContext(ctx, dInput)
 	if err != nil {
 		fmt.Println("Decryption request failed:", err.Error())
 		os.Exit(1)
@@ -275,4 +309,17 @@ func main() {
 
 	fmt.Println("Success:", dOutput.Success)
 	fmt.Println("Decrypted payload: " + string(dOutput.Result.Payload))
+
+	// Get Key Id
+	getKeyInput := &kms.GetKeyIdInput{
+		ExternalID: keyID,
+	}
+
+	keyOutput, err := vaultClient.GetKeyIdWithContext(ctx, getKeyInput)
+	fmt.Println("ip :: ", string(ip))
+	fmt.Println("keyOutput.Result.Key.Name :: ", keyOutput.Result.Key.Name)
+	if err != nil {
+		fmt.Println("GetKeyId request failed:", err.Error())
+		os.Exit(1)
+	}
 }

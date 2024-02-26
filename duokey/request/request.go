@@ -27,10 +27,11 @@ type Request struct {
 
 // Operation (GET, POST, etc.). The URL of the endpoint is given by baseURL + Route.
 type Operation struct {
-	Name       string
-	HTTPMethod string
-	BaseURL    string
-	Route      string
+	Name        string
+	HTTPMethod  string
+	BaseURL     string
+	Route       string
+	QueryParams string
 }
 
 // New returns a pointer to a request.
@@ -65,6 +66,11 @@ func New(config duokey.Config, operation *Operation, params interface{}, respons
 	}
 
 	rawurl = operation.BaseURL + operation.Route
+	if operation.HTTPMethod == http.MethodGet {
+		if operation.QueryParams != "" {
+			rawurl = operation.BaseURL + operation.Route + "?" + operation.QueryParams
+		}
+	}
 	httpReq.URL, err = url.Parse(rawurl)
 	if err != nil {
 		httpReq.URL = &url.URL{}

@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/duokey/duokey-sdk-go/duokey/request"
+	"github.com/google/go-querystring/query"
 )
 
 // Import
@@ -91,13 +92,15 @@ type EncryptInput struct {
 
 // EncryptOutput contains the deserialized payload returned by the DuoKey server.
 // Validation is done by calling request.Send.
+// For AES-GCM operation, the Iv is also found in the payload and needed for the decrypt operation
 type EncryptOutput struct {
 	Success bool `json:"success"`
 	Result  struct {
-		KeyID     string `json:"keyid" validate:"nonzero"`
-		Algorithm string `json:"algorithm"`
-		Payload   []byte `json:"payload" validate:"nonzero"`
-		ID        uint32 `json:"id"`
+		KeyID            string `json:"keyid" validate:"nonzero"`
+		Algorithm        string `json:"algorithm"`
+		EncryptedPayload string `json:"encryptedPayload" validate:"nonzero"`
+		ID               uint32 `json:"id"`
+		Iv               string `json:"initializationVector"`
 	} `json:"result" validate:"nonzero"`
 	TargetURL           *string `json:"targetUrl"`
 	Error               *string `json:"error"`
@@ -156,6 +159,7 @@ func (k *KMS) encryptRequest(input *EncryptInput) (req *request.Request, output 
 const opDecrypt = "Decrypt"
 
 // DecryptInput contains a payload to be decrypted by DuoKey.
+// An Iv can be passed if needed
 // Validation is done by calling request.New.
 type DecryptInput struct {
 	ID        uint32            `json:"id"`
@@ -163,7 +167,8 @@ type DecryptInput struct {
 	VaultID   string            `json:"vaultid" validate:"nonzero"`
 	Algorithm string            `json:"algorithm,omitempty"`
 	Context   map[string]string `json:"context,omitempty"`
-	Payload   []byte            `json:"payload"`
+	Payload   string            `json:"payload"`
+	Iv        string            `json:"iv"`
 }
 
 // DecryptOutput contains the deserialized payload returned by the DuoKey server.
@@ -224,6 +229,102 @@ func (k *KMS) decryptRequest(input *DecryptInput) (req *request.Request, output 
 	}
 
 	output = &DecryptOutput{}
+	req = k.NewRequest(op, input, output)
+
+	return
+}
+
+// GetKeyId
+const opGetKeyId = "GetKeyId"
+
+// GetKeyIdInput retrives key information.
+type GetKeyIdInput struct {
+	ExternalID string `schema:"externalId" url:"externalId"`
+}
+
+type KeyData struct {
+	Name             string `json:"name"`
+	Size             int    `json:"size"`
+	PublicKey        string `json:"publicKey"`
+	IsEnabled        bool   `json:"isEnabled"`
+	State            int    `json:"state"`
+	ExternalId       string `json:"externalId"`
+	ActivationTime   string `json:"activationTime"`
+	IsDecrypt        bool   `json:"isDecrypt"`
+	IsEncrypt        bool   `json:"isEncrypt"`
+	IsWrap           bool   `json:"isWrap"`
+	IsUnwrap         bool   `json:"isUnwrap"`
+	IsDeriveKey      bool   `json:"isDeriveKey"`
+	IsMacGenerate    bool   `json:"isMacGenerate"`
+	IsMacVerify      bool   `json:"isMacVerify"`
+	IsAppManageable  bool   `json:"isAppManageable"`
+	IsSign           bool   `json:"isSign"`
+	IsVerify         bool   `json:"isVerify"`
+	IsAgreeKey       bool   `json:"isAgreeKey"`
+	IsExport         bool   `json:"isExport"`
+	IsAuditLogEnable bool   `json:"isAuditLogEnable"`
+	Type             string `json:"type"`
+	DeactivationTime string `json:"deactivationTime"`
+	Reason           int    `json:"reason"`
+	CompromiseTime   string `json:"compromiseTime"`
+	Comment          string `json:"comment"`
+	PublishPublicKey bool   `json:"publishPublicKey"`
+	VaultId          string `json:"vaultId"`
+	Id               string `json:"id"`
+}
+
+// GetKeyIdOutput contains key information.
+// Validation is done by calling request.Send.
+type GetKeyIdOutput struct {
+	Success bool `json:"success"`
+	Result  struct {
+		Key       KeyData `json:"key" validate:"nonzero"`
+		VaultName string  `json:"vaultName"`
+		VaultType uint32  `json:"vaultType"`
+	} `json:"result" validate:"nonzero"`
+	TargetURL           *string `json:"targetUrl"`
+	Error               *string `json:"error"`
+	UnauthorizedRequest bool    `json:"unAuthorizedRequest"`
+	ABP                 bool    `json:"__abp"`
+}
+
+// Get Key By Id
+func (k *KMS) GetKeyId(input *GetKeyIdInput) (*GetKeyIdOutput, error) {
+
+	req, out := k.getKeyIdRequest(input)
+
+	return out, req.Send()
+}
+
+// GetKeyIdWithContext is the same operation as GetKeyId. It is however possible
+// to pass a non-nil context.
+func (k *KMS) GetKeyIdWithContext(ctx context.Context, input *GetKeyIdInput) (*GetKeyIdOutput, error) {
+
+	req, out := k.getKeyIdRequest(input)
+	req.SetContext(ctx)
+
+	return out, req.Send()
+}
+
+func (k *KMS) getKeyIdRequest(input *GetKeyIdInput) (req *request.Request, output *GetKeyIdOutput) {
+
+	// This is used to get query parameter format from struct =>  queryParams ::  map[externalId:[2e974659-64e8-4e8a-b702-c5133620bd0f]]
+	// queryParams.Encode() will convert it into string query parameter => externalId=2e974659-64e8-4e8a-b702-c5133620bd0f
+	queryParams, _ := query.Values(input)
+
+	op := &request.Operation{
+		Name:        opGetKeyId,
+		HTTPMethod:  http.MethodGet,
+		BaseURL:     k.Endpoints.BaseURL,
+		Route:       k.Endpoints.GetKeyIdRoute,
+		QueryParams: queryParams.Encode(),
+	}
+
+	if input == nil {
+		input = &GetKeyIdInput{}
+	}
+
+	output = &GetKeyIdOutput{}
 	req = k.NewRequest(op, input, output)
 
 	return
