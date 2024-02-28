@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"strconv"
@@ -197,8 +197,8 @@ func getConfig() {
 * The key is set in the DUOKEY_KEY_ID variable
 *	This code was tested with an RSA or AES key
 * For RSA operations:
-*	Algorithm: "3",
-*	Remarque: the algorithm can be a string, "3" is/was used for Sepior
+*	Algorithm: "RSA-OAEP-256"
+*		In former versions, was "3", used for Sepior
 * For AES-GCM operations:
 *	Algorithm: "AES-GCM",
 *	And the Iv, received from the Encrypt operation, can be passed in the DecryptInput
@@ -240,14 +240,14 @@ func main() {
 	}
 	defer resp.Body.Close()
 
-	ip, err := ioutil.ReadAll(resp.Body)
+	ip, err := io.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println("Error:", err.Error())
 		os.Exit(1)
 	}
 
 	// define the algorithm, according to the key
-	algorithm := "3"
+	algorithm := "RSA-OAEP-256"
 	// algorithm := "AES-GCM"
 
 	// Encryption
