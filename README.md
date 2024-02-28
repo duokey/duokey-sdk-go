@@ -29,7 +29,7 @@ The metadata of the SDK dependencies can be found in the Go module file [`go.mod
   "algorithm": "3",
    "context": {
     "appid": "87c3ab90-793b-7733-6060-1329a75f6b06",
-    "ttp://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn": "nagib.aouini@duokey.ch"
+    "ttp://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn": "john.doe@example.com"
 }
 }
 ```
