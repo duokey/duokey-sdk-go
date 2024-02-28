@@ -1,6 +1,6 @@
 module github.com/duokey/duokey-sdk-go
 
-go 1.21
+go 1.20
 
 require (
 	github.com/coreos/go-oidc/v3 v3.9.0
