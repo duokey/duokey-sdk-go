@@ -329,3 +329,96 @@ func (k *KMS) getKeyIdRequest(input *GetKeyIdInput) (req *request.Request, outpu
 
 	return
 }
+
+// CSR Import
+const opCSRImport = "CSRImport"
+
+type CSRImportInput struct {
+	CSR string `schema:"csr" url:"csr"`
+}
+
+type CSRImportOutput struct {
+	Success             bool    `json:"success"`
+	Error               *string `json:"error"`
+	UnauthorizedRequest bool    `json:"unAuthorizedRequest"`
+}
+
+func (k *KMS) CSRImport(input *CSRImportInput) (*CSRImportOutput, error) {
+	req, out := k.csrImportRequest(input)
+
+	return out, req.Send()
+}
+
+func (k *KMS) CSRImportWithContext(ctx context.Context, input *CSRImportInput) (*CSRImportOutput, error) {
+
+	req, out := k.csrImportRequest(input)
+	req.SetContext(ctx)
+
+	return out, req.Send()
+}
+
+func (k *KMS) csrImportRequest(input *CSRImportInput) (req *request.Request, output *CSRImportOutput) {
+
+	op := &request.Operation{
+		Name:       opCSRImport,
+		HTTPMethod: http.MethodPost,
+		BaseURL:    k.Endpoints.BaseURL,
+		Route:      k.Endpoints.CSRImportRoute,
+	}
+
+	if input == nil {
+		input = &CSRImportInput{}
+	}
+
+	output = &CSRImportOutput{}
+	req = k.NewRequest(op, input.CSR, output)
+
+	return
+}
+
+// CSR Status
+const opCSRStatus = "CSRStatus"
+
+type CSRStatusInput struct {
+	CommonName string `schema:"commonName" url:"commonName"`
+}
+
+// TODO
+// What is the type of Status
+// and add a field for the certificate
+type CSRStatusOutput struct {
+	Status bool `json:"success"`
+}
+
+func (k *KMS) CSRStatus(input *CSRStatusInput) (*CSRStatusOutput, error) {
+	req, out := k.csrStatusRequest(input)
+
+	return out, req.Send()
+}
+
+func (k *KMS) CSRStatusWithContext(ctx context.Context, input *CSRStatusInput) (*CSRStatusOutput, error) {
+
+	req, out := k.csrStatusRequest(input)
+	req.SetContext(ctx)
+
+	return out, req.Send()
+}
+
+func (k *KMS) csrStatusRequest(input *CSRStatusInput) (req *request.Request, output *CSRStatusOutput) {
+
+	op := &request.Operation{
+		Name:       opCSRStatus,
+		HTTPMethod: http.MethodPost,
+		BaseURL:    k.Endpoints.BaseURL,
+		Route:      k.Endpoints.CSRStatusRoute,
+	}
+
+	if input == nil {
+		input = &CSRStatusInput{}
+	}
+
+	output = &CSRStatusOutput{}
+	req = k.NewRequest(op, input, output)
+
+	return
+}
