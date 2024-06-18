@@ -45,7 +45,7 @@ var (
 )
 
 func timeTrack(start time.Time) {
-	fmt.Printf("Encryption and decryption took %s\n", time.Since(start))
+	fmt.Printf("Operations took %s\n", time.Since(start))
 }
 
 func getConfig() {
@@ -260,6 +260,7 @@ func main() {
 	testCSROperations(vaultClient)
 }
 
+// Testing the very first implementation of the Cockpit's CSR Import+status operations
 func testCSROperations(vaultClient *kms.KMS) {
 	var csrPEM string
 	csrPEM = `-----BEGIN CERTIFICATE REQUEST-----
@@ -291,14 +292,32 @@ HoDXb1Y5
 	defer timeTrack(time.Now())
 
 	fmt.Println("CSR Import request")
-	// eOutput, err := vaultClient.CSRImport(eInput)
 	eOutput, err := vaultClient.CSRImportWithContext(ctx, eInput)
 	if err != nil {
 		fmt.Println("CSR Import request failed:", err.Error())
-		os.Exit(1)
+		// os.Exit(1)
+	} else {
+		fmt.Println("CSR Import request - Success value:" + strconv.FormatBool(eOutput.Success))
 	}
 
 	fmt.Println("Output:", eOutput)
+
+	// Get Status
+	fmt.Println("CSR Status request")
+	eInputStatus := &kms.CSRStatusInput{
+		CommonName: "scepclient",
+	}
+
+	//eOutputStatus, err := vaultClient.CSRStatusWithContext(ctx, eInputStatus)
+	eOutputStatus, err := vaultClient.CSRStatus(eInputStatus)
+	if err != nil {
+		fmt.Println("CSR Status request failed:", err.Error())
+		// os.Exit(1)
+	} else {
+		fmt.Println("CSR Status request - Success:" + strconv.FormatBool(eOutputStatus.Success))
+		fmt.Println("CSR Status request - Status:" + eOutputStatus.Result.Status)
+		fmt.Println("CSR Status request - Certificate:" + eOutputStatus.Result.Certificate)
+	}
 }
 
 func testKeysOperations(vaultClient *kms.KMS) {

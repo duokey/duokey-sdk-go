@@ -358,7 +358,6 @@ func (k *KMS) CSRImportWithContext(ctx context.Context, input *CSRImportInput) (
 }
 
 func (k *KMS) csrImportRequest(input *CSRImportInput) (req *request.Request, output *CSRImportOutput) {
-
 	op := &request.Operation{
 		Name:       opCSRImport,
 		HTTPMethod: http.MethodPost,
@@ -383,11 +382,12 @@ type CSRStatusInput struct {
 	CommonName string `schema:"commonName" url:"commonName"`
 }
 
-// TODO
-// What is the type of Status
-// and add a field for the certificate
 type CSRStatusOutput struct {
-	Status bool `json:"success"`
+	Success bool `json:"success"`
+	Result  struct {
+		Status      string `json:"status"`
+		Certificate string `json:"certificate"`
+	} `json:"result" validate:"nonzero"`
 }
 
 func (k *KMS) CSRStatus(input *CSRStatusInput) (*CSRStatusOutput, error) {
@@ -405,12 +405,15 @@ func (k *KMS) CSRStatusWithContext(ctx context.Context, input *CSRStatusInput) (
 }
 
 func (k *KMS) csrStatusRequest(input *CSRStatusInput) (req *request.Request, output *CSRStatusOutput) {
+	// commonName is passed as query parameter
+	queryParams, _ := query.Values(input)
 
 	op := &request.Operation{
-		Name:       opCSRStatus,
-		HTTPMethod: http.MethodPost,
-		BaseURL:    k.Endpoints.BaseURL,
-		Route:      k.Endpoints.CSRStatusRoute,
+		Name:        opCSRStatus,
+		HTTPMethod:  http.MethodPost,
+		BaseURL:     k.Endpoints.BaseURL,
+		Route:       k.Endpoints.CSRStatusRoute,
+		QueryParams: queryParams.Encode(),
 	}
 
 	if input == nil {
