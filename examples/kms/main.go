@@ -35,13 +35,17 @@ var (
 	importRoute   string
 	getKeyIdRoute string
 
+	// CSR
+	csrImportRoute string
+	csrStatusRoute string
+
 	// Vault and key
 	vaultID string
 	keyID   string
 )
 
 func timeTrack(start time.Time) {
-	fmt.Printf("Encryption and decryption took %s\n", time.Since(start))
+	fmt.Printf("Operations took %s\n", time.Since(start))
 }
 
 func getConfig() {
@@ -190,6 +194,22 @@ func getConfig() {
 		os.Exit(1)
 	}
 
+	switch {
+	case os.Getenv("DUOKEY_CSRIMPORT_ROUTE") != "":
+		csrImportRoute = os.Getenv("DUOKEY_CSRIMPORT_ROUTE")
+	default:
+		fmt.Println("DUOKEY_CSRIMPORT_ROUTE is not defined")
+		os.Exit(1)
+	}
+
+	switch {
+	case os.Getenv("DUOKEY_CSRSTATUS_ROUTE") != "":
+		csrStatusRoute = os.Getenv("DUOKEY_CSRSTATUS_ROUTE")
+	default:
+		fmt.Println("DUOKEY_CSRSTATUS_ROUTE is not defined")
+		os.Exit(1)
+	}
+
 }
 
 /*
@@ -220,11 +240,13 @@ func main() {
 	}
 
 	endpoints := kms.Endpoints{
-		BaseURL:       baseURL,
-		EncryptRoute:  encryptRoute,
-		DecryptRoute:  decryptRoute,
-		ImportRoute:   importRoute,
-		GetKeyIdRoute: getKeyIdRoute,
+		BaseURL:        baseURL,
+		EncryptRoute:   encryptRoute,
+		DecryptRoute:   decryptRoute,
+		ImportRoute:    importRoute,
+		GetKeyIdRoute:  getKeyIdRoute,
+		CSRImportRoute: csrImportRoute,
+		CSRStatusRoute: csrStatusRoute,
 	}
 
 	vaultClient, err := kms.NewClient(credentials, endpoints)
@@ -233,6 +255,72 @@ func main() {
 		os.Exit(1)
 	}
 
+	// testKeysOperations(vaultClient)
+
+	testCSROperations(vaultClient)
+}
+
+// Testing the very first implementation of the Cockpit's CSR Import+status operations
+func testCSROperations(vaultClient *kms.KMS) {
+	var csrPEM string
+	csrPEM = `-----BEGIN CERTIFICATE REQUEST-----
+MIICojCCAYoCAQAwRjELMAkGA1UEBhMCVVMxFDASBgNVBAoTC3NjZXAtY2xpZW50
+MQwwCgYDVQQLEwNNRE0xEzARBgNVBAMTCnNjZXBjbGllbnQwggEiMA0GCSqGSIb3
+DQEBAQUAA4IBDwAwggEKAoIBAQDTW1LFP6jNNmJqmSfAMZnFBhOtNSGyc4okL4vd
+gdFIkKvJgcWFlhQN87zKq+h6PV3qxde4CFz76Plb8lZig/V8YcJTB7FnDkNbaZ7m
+E0EIPajlDYfP1jXYA9iK8Lmy3zmtGw9BYo94XQMtJwuz2Qdi2jv+96i2BYOpa3HT
+UxHYs0xI/o/AmMZPt5OnLjjlR2Swvne9VuusQYaGocSl3+1jbm4DWAPojBeJSVSe
+lMRgfxjQMrr3RLfZB8VQ21ZB+ZjJOkHptZly24i0NsR39RBOnoVdYoyC85/OHGUc
+lKM/x+l4QvjUhu+579bb+Ke0UVO0JZBk758D7D7c4humvIojAgMBAAGgFzAVBgkq
+hkiG9w0BCQcxCBMGc2VjcmV0MA0GCSqGSIb3DQEBCwUAA4IBAQAoZYQS8l5CsOsY
+gVyTtx9T6wREeK4000MQ2CSopzivHwGONY97cOyulbmXkamFofybwahwe9jipQM4
+K/1W1y38wkn0yfJnXfej9xoDP0u9PWuNn4StMvmRR1tuUFYsjuKk1XVuO8xn3YQu
+1QgcX0QiSD+hg4gX1LXNd1UdapnpAHRwUh5MTvHdZIS/SArNd9sPRejc8kL7X6bo
+UnT2RRZ+f4PeetNVLcPW2nz/PiuZenxk/2erUFnTeGTXLPO0/TBQUZlduEB7bGPA
+l7clZSSpZfmnkzR9mpTLPzcGfoUuA5OcQ3OY8iSlF7/52NS/bNocuaUIoHiMVFfp
+HoDXb1Y5
+-----END CERTIFICATE REQUEST-----`
+
+	eInput := &kms.CSRImportInput{
+		CSR: csrPEM,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Millisecond*10000))
+	defer cancel()
+
+	// Start timer
+	defer timeTrack(time.Now())
+
+	fmt.Println("CSR Import request")
+	eOutput, err := vaultClient.CSRImportWithContext(ctx, eInput)
+	if err != nil {
+		fmt.Println("CSR Import request failed:", err.Error())
+		// os.Exit(1)
+	} else {
+		fmt.Println("CSR Import request - Success value:" + strconv.FormatBool(eOutput.Success))
+	}
+
+	fmt.Println("Output:", eOutput)
+
+	// Get Status
+	fmt.Println("CSR Status request")
+	eInputStatus := &kms.CSRStatusInput{
+		CommonName: "scepclient",
+	}
+
+	//eOutputStatus, err := vaultClient.CSRStatusWithContext(ctx, eInputStatus)
+	eOutputStatus, err := vaultClient.CSRStatus(eInputStatus)
+	if err != nil {
+		fmt.Println("CSR Status request failed:", err.Error())
+		// os.Exit(1)
+	} else {
+		fmt.Println("CSR Status request - Success:" + strconv.FormatBool(eOutputStatus.Success))
+		fmt.Println("CSR Status request - Status:" + eOutputStatus.Result.Status)
+		fmt.Println("CSR Status request - Certificate:" + eOutputStatus.Result.Certificate)
+	}
+}
+
+func testKeysOperations(vaultClient *kms.KMS) {
 	resp, err := http.Get("https://api.ipify.org?format=text")
 	if err != nil {
 		fmt.Println("Error:", err.Error())

@@ -15,6 +15,10 @@ type KMSAPI interface {
 	EncryptWithContext(context.Context, *kms.EncryptInput) (*kms.EncryptOutput, error)
 	Decrypt(*kms.DecryptInput) (*kms.DecryptOutput, error)
 	DecryptWithContext(context.Context, *kms.DecryptInput) (*kms.DecryptOutput, error)
+	CSRImport(*kms.CSRImportInput) (*kms.CSRImportOutput, error)
+	CSRImportWithContext(context.Context, *kms.CSRImportInput) (*kms.CSRImportOutput, error)
+	CSRStatus(*kms.CSRStatusInput) (*kms.CSRStatusOutput, error)
+	CSRStatusWithContext(context.Context, *kms.CSRStatusInput) (*kms.CSRStatusOutput, error)
 }
 
 // Ensure that KMS implements the KMSAPI interface

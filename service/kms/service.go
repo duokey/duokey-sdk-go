@@ -15,11 +15,13 @@ type KMS struct {
 // Endpoints of the crypto services (all routes of the DuoKey REST API
 // are customizable)
 type Endpoints struct {
-	BaseURL       string `mapstructure:"base-url"`
-	EncryptRoute  string `mapstructure:"encrypt-route"`
-	DecryptRoute  string `mapstructure:"decrypt-route"`
-	ImportRoute   string `mapstructure:"import-route"`
-	GetKeyIdRoute string `mapstructure:"getkeyid-route"`
+	BaseURL        string `mapstructure:"base-url"`
+	EncryptRoute   string `mapstructure:"encrypt-route"`
+	DecryptRoute   string `mapstructure:"decrypt-route"`
+	ImportRoute    string `mapstructure:"import-route"`
+	GetKeyIdRoute  string `mapstructure:"getkeyid-route"`
+	CSRImportRoute string `mapstructure:"getkeyid-route"`
+	CSRStatusRoute string `mapstructure:"getkeyid-route"`
 }
 
 // New checks the credentials and returns a KMS client with the default logger.

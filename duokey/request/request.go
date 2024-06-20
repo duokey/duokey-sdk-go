@@ -66,7 +66,7 @@ func New(config duokey.Config, operation *Operation, params interface{}, respons
 	}
 
 	rawurl = operation.BaseURL + operation.Route
-	if operation.HTTPMethod == http.MethodGet {
+	if operation.HTTPMethod == http.MethodGet || operation.HTTPMethod == http.MethodPost {
 		if operation.QueryParams != "" {
 			rawurl = operation.BaseURL + operation.Route + "?" + operation.QueryParams
 		}
