@@ -258,6 +258,7 @@ func main() {
 	// testKeysOperations(vaultClient)
 
 	testCSROperations(vaultClient)
+	testGetSignatureCA(vaultClient)
 }
 
 // Testing the very first implementation of the Cockpit's CSR Import+status operations
@@ -318,6 +319,29 @@ HoDXb1Y5
 		fmt.Println("CSR Status request - Status:" + eOutputStatus.Result.Status)
 		fmt.Println("CSR Status request - Certificate:" + eOutputStatus.Result.Certificate)
 	}
+}
+
+// Testing the get scep signature CA from cockpit
+func testGetSignatureCA(vaultClient *kms.KMS) {
+
+	eInput := &kms.GetSignatureCAInput{
+		ScepExternalId: appID,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Millisecond*10000))
+	defer cancel()
+
+	fmt.Println("Get Signature CA request")
+	eOutput, err := vaultClient.GetSignatureCAWithContext(ctx, eInput)
+	if err != nil {
+		fmt.Println("Get Signature CA request failed:", err.Error())
+		// os.Exit(1)
+	} else {
+		fmt.Println("Get Signature CA request - Success value:" + strconv.FormatBool(eOutput.Success))
+	}
+
+	fmt.Println("Get Signature CA request - Success:" + strconv.FormatBool(eOutput.Success))
+	fmt.Println("Get Signature CA request - result:" + eOutput.Result)
 }
 
 func testKeysOperations(vaultClient *kms.KMS) {
