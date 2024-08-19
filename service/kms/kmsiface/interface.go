@@ -19,6 +19,8 @@ type KMSAPI interface {
 	CSRImportWithContext(context.Context, *kms.CSRImportInput) (*kms.CSRImportOutput, error)
 	CSRStatus(*kms.CSRStatusInput) (*kms.CSRStatusOutput, error)
 	CSRStatusWithContext(context.Context, *kms.CSRStatusInput) (*kms.CSRStatusOutput, error)
+	GetSignatureCA(*kms.GetSignatureCAInput) (*kms.GetSignatureCAOutput, error)
+	GetSignatureCAWithContext(context.Context, *kms.GetSignatureCAInput) (*kms.GetSignatureCAOutput, error)
 }
 
 // Ensure that KMS implements the KMSAPI interface

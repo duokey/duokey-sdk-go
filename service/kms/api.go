@@ -425,3 +425,51 @@ func (k *KMS) csrStatusRequest(input *CSRStatusInput) (req *request.Request, out
 
 	return
 }
+
+// Scep Get Signature CA
+const opGetSignatureCA = "GetSignatureCA"
+
+type GetSignatureCAInput struct {
+	ScepExternalId string `schema:"scepExternalId" url:"commonName"`
+}
+
+type GetSignatureCAOutput struct {
+	Success bool   `json:"success"`
+	Result  string `json:"result" validate:"nonzero"`
+}
+
+func (k *KMS) GetSignatureCA(input *GetSignatureCAInput) (*GetSignatureCAOutput, error) {
+	req, out := k.getSignatureCARequest(input)
+
+	return out, req.Send()
+}
+
+func (k *KMS) GetSignatureCAWithContext(ctx context.Context, input *GetSignatureCAInput) (*GetSignatureCAOutput, error) {
+
+	req, out := k.getSignatureCARequest(input)
+	req.SetContext(ctx)
+
+	return out, req.Send()
+}
+
+func (k *KMS) getSignatureCARequest(input *GetSignatureCAInput) (req *request.Request, output *GetSignatureCAOutput) {
+	// commonName is passed as query parameter
+	queryParams, _ := query.Values(input)
+
+	op := &request.Operation{
+		Name:        opGetSignatureCA,
+		HTTPMethod:  http.MethodGet,
+		BaseURL:     k.Endpoints.BaseURL,
+		Route:       k.Endpoints.GetSignatureCA,
+		QueryParams: queryParams.Encode(),
+	}
+
+	if input == nil {
+		input = &GetSignatureCAInput{}
+	}
+
+	output = &GetSignatureCAOutput{}
+	req = k.NewRequest(op, input, output)
+
+	return
+}

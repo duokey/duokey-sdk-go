@@ -22,6 +22,7 @@ type Endpoints struct {
 	GetKeyIdRoute  string `mapstructure:"getkeyid-route"`
 	CSRImportRoute string `mapstructure:"getkeyid-route"`
 	CSRStatusRoute string `mapstructure:"getkeyid-route"`
+	GetSignatureCA string `mapstructure:"getsignatureca-route"`
 }
 
 // New checks the credentials and returns a KMS client with the default logger.
