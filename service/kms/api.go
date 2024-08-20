@@ -430,7 +430,7 @@ func (k *KMS) csrStatusRequest(input *CSRStatusInput) (req *request.Request, out
 const opGetSignatureCA = "GetSignatureCA"
 
 type GetSignatureCAInput struct {
-	ScepExternalId string `schema:"scepExternalId" url:"commonName"`
+	ScepExternalId string `schema:"scepExternalId" url:"scepExternalId"`
 }
 
 type GetSignatureCAOutput struct {

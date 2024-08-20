@@ -38,6 +38,7 @@ var (
 	// CSR
 	csrImportRoute string
 	csrStatusRoute string
+	getSignatureCA string
 
 	// Vault and key
 	vaultID string
@@ -210,6 +211,14 @@ func getConfig() {
 		os.Exit(1)
 	}
 
+	switch {
+	case os.Getenv("DUOKEY_GETSIGNATURECA_ROUTE") != "":
+		getSignatureCA = os.Getenv("DUOKEY_GETSIGNATURECA_ROUTE")
+	default:
+		fmt.Println("DUOKEY_GETSIGNATURECA_ROUTE is not defined")
+		os.Exit(1)
+	}
+
 }
 
 /*
@@ -247,6 +256,7 @@ func main() {
 		GetKeyIdRoute:  getKeyIdRoute,
 		CSRImportRoute: csrImportRoute,
 		CSRStatusRoute: csrStatusRoute,
+		GetSignatureCA: getSignatureCA,
 	}
 
 	vaultClient, err := kms.NewClient(credentials, endpoints)
@@ -256,8 +266,7 @@ func main() {
 	}
 
 	// testKeysOperations(vaultClient)
-
-	testCSROperations(vaultClient)
+	// testCSROperations(vaultClient)
 	testGetSignatureCA(vaultClient)
 }
 
