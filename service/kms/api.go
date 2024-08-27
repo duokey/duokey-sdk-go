@@ -2,7 +2,15 @@ package kms
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/sha256"
+	"crypto/x509"
+	"encoding/base64"
+	"encoding/pem"
+	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/duokey/duokey-sdk-go/duokey/request"
 	"github.com/google/go-querystring/query"
@@ -111,23 +119,93 @@ type EncryptOutput struct {
 // Encrypt API operation for DuoKey
 func (k *KMS) Encrypt(input *EncryptInput) (*EncryptOutput, error) {
 
-	req, out := k.encryptRequest(input)
-
-	return out, req.Send()
+	return k.encryptRequest(input, nil)
 }
 
 // EncryptWithContext is the same operation as Encrypt. It is however possible
 // to pass a non-nil context.
 func (k *KMS) EncryptWithContext(ctx context.Context, input *EncryptInput) (*EncryptOutput, error) {
 
-	req, out := k.encryptRequest(input)
-	req.SetContext(ctx)
-
-	return out, req.Send()
+	return k.encryptRequest(input, ctx)
 }
 
-func (k *KMS) encryptRequest(input *EncryptInput) (req *request.Request, output *EncryptOutput) {
+// Since 2024 the cockpit no more handles RSA Encryption
+//
+//	RSA encryption must be performed by the client
+func (k *KMS) encryptRequest(input *EncryptInput, ctx context.Context) (*EncryptOutput, error) {
+	if strings.HasPrefix(input.Algorithm, "RSA") {
+		return k.encryptRequestRSAByClient(input, ctx)
+	} else {
+		req, out := k.encryptRequestByCockpit(input)
+		if ctx != nil {
+			req.SetContext(ctx)
+		}
 
+		return out, req.Send()
+	}
+}
+
+// RSA Encryption is performed by the client
+//
+//	The RSA key data is queried from the Cockpit witha getKeyById
+func (k *KMS) encryptRequestRSAByClient(input *EncryptInput, ctx context.Context) (*EncryptOutput, error) {
+	// Request the RSA key information
+	getKeyIdInput := GetKeyIdInput{
+		ExternalID: input.KeyID,
+	}
+
+	var getKeyIdOutput *GetKeyIdOutput
+	var err error
+
+	if ctx != nil {
+		getKeyIdOutput, err = k.GetKeyIdWithContext(ctx, &getKeyIdInput)
+	} else {
+		getKeyIdOutput, err = k.GetKeyId(&getKeyIdInput)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	// Create a rsa Public Key object from the string returned by the cockpit (that does not contain header/footer)
+	pubKeyPEM := "-----BEGIN PUBLIC KEY-----\n" + getKeyIdOutput.Result.Key.PublicKey + "\n-----END PUBLIC KEY-----"
+
+	// Decode the PEM string to get the public key
+	block, _ := pem.Decode([]byte(pubKeyPEM))
+	if block == nil || block.Type != "PUBLIC KEY" {
+		return nil, errors.New("Failed to decode PEM block containing the public key")
+	}
+
+	// Parse the public key
+	pubKey, err := x509.ParsePKIXPublicKey(block.Bytes)
+	if err != nil {
+		return nil, errors.New("Failed to parse public key:" + err.Error())
+	}
+
+	// Type assert the public key to rsa.PublicKey type
+	rsaPubKey, ok := pubKey.(*rsa.PublicKey)
+	if !ok {
+		return nil, errors.New("Not an RSA public key")
+	}
+
+	label := []byte("") // Optional, used for OAEP encryption, can be left empty
+
+	ciphertext, err := rsa.EncryptOAEP(sha256.New(), rand.Reader, rsaPubKey, input.Payload, label)
+	ciphertextB64 := base64.StdEncoding.EncodeToString(ciphertext)
+
+	// Prepare the result
+	output := &EncryptOutput{}
+	output.Success = true
+	output.Result.KeyID = input.KeyID
+	output.Result.Algorithm = input.Algorithm
+	output.Result.EncryptedPayload = ciphertextB64
+	output.Result.ID = input.ID
+
+	return output, nil
+
+}
+
+func (k *KMS) encryptRequestByCockpit(input *EncryptInput) (req *request.Request, output *EncryptOutput) {
 	op := &request.Operation{
 		Name:       opEncrypt,
 		HTTPMethod: http.MethodPost,

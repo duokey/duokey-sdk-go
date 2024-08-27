@@ -265,9 +265,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	// testKeysOperations(vaultClient)
-	// testCSROperations(vaultClient)
-	testGetSignatureCA(vaultClient)
+	testKeysOperations(vaultClient)
+	//testCSROperations(vaultClient)
+	//testGetSignatureCA(vaultClient)
 }
 
 // Testing the very first implementation of the Cockpit's CSR Import+status operations
