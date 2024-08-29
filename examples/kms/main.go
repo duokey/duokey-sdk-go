@@ -428,7 +428,7 @@ func testKeysOperations(vaultClient *kms.KMS) {
 		os.Exit(1)
 	}
 
-	fmt.Println("Success:", dOutput.Success)
+	fmt.Println("Decryption request - Success:", dOutput.Success)
 	fmt.Println("Decrypted payload: " + string(dOutput.Result.Payload))
 
 	// Get Key Id
