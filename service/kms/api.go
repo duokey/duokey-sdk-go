@@ -411,14 +411,25 @@ func (k *KMS) getKeyIdRequest(input *GetKeyIdInput) (req *request.Request, outpu
 // CSR Import
 const opCSRImport = "CSRImport"
 
+// AppID is the standard parameter for the sdk
+//		It is the Cockpit's App which is, in that case, a SCEP app
+//		it is used by the cockpit to know which CA issuer to use to sign the CSR
+//
+// RequestId is a transactionID received from a SCEP client for instance
+// 		and that should be identical for the CSR upload + the CSR status operation
+
+type Context struct {
+	TransactionID string `json:"transactionid"`
+	AppID         string `json:"appid"`
+}
+
 type CSRImportInput struct {
-	CSR string `schema:"csr" url:"csr"`
+	CSR     string  `json:"csr"`
+	Context Context `json:"context"`
 }
 
 type CSRImportOutput struct {
-	Success             bool    `json:"success"`
-	Error               *string `json:"error"`
-	UnauthorizedRequest bool    `json:"unAuthorizedRequest"`
+	Success bool `json:"success"`
 }
 
 func (k *KMS) CSRImport(input *CSRImportInput) (*CSRImportOutput, error) {
@@ -448,7 +459,7 @@ func (k *KMS) csrImportRequest(input *CSRImportInput) (req *request.Request, out
 	}
 
 	output = &CSRImportOutput{}
-	req = k.NewRequest(op, input.CSR, output)
+	req = k.NewRequest(op, input, output)
 
 	return
 }
@@ -456,8 +467,11 @@ func (k *KMS) csrImportRequest(input *CSRImportInput) (req *request.Request, out
 // CSR Status
 const opCSRStatus = "CSRStatus"
 
+// See CSRImportInput struct for some details
+// Those values are not passed as json, but as query params
 type CSRStatusInput struct {
-	CommonName string `schema:"commonName" url:"commonName"`
+	CommonName    string `schema:"commonName" url:"commonName"`
+	TransactionID string `schema:"transactionId" url:"transactionId"` // `schema:"requestId" url:"requestId"`
 }
 
 type CSRStatusOutput struct {

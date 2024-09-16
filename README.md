@@ -55,6 +55,10 @@ Define the following environment variables:
 | DUOKEY_ENCRYPT_ROUTE | The DuoKey API route to be used to make an encryption request |
 | DUOKEY_DECRYPT_ROUTE | The DuoKey API route to be used to make a decryption request |
 | DUOKEY_IMPORT_ROUTE | The DuoKey API route to be used to import a key |
+| DUOKEY_CSRIMPORT_ROUTE | The DuoKey API route to be used to import a CSR |
+| DUOKEY_CSRSTATUS_ROUTE | The DuoKey API route to be used to import get the CSR Status and get the signed certificate |
+| DUOKEY_GETSIGNATURECA_ROUTE | The DuoKey API route to be used to get the CA signature |
+
 
 Run the example:
 
