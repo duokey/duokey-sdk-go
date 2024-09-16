@@ -35,7 +35,7 @@ var (
 	importRoute   string
 	getKeyIdRoute string
 
-	// CSR
+	// CSR + SCEP
 	csrImportRoute string
 	csrStatusRoute string
 	getSignatureCA string
@@ -265,34 +265,42 @@ func main() {
 		os.Exit(1)
 	}
 
-	testKeysOperations(vaultClient)
-	//testCSROperations(vaultClient)
+	//testKeysOperations(vaultClient)
+	testCSROperations(vaultClient)
 	//testGetSignatureCA(vaultClient)
 }
 
-// Testing the very first implementation of the Cockpit's CSR Import+status operations
+// Testing the implementation of the Cockpit's CSR Import+status operations
 func testCSROperations(vaultClient *kms.KMS) {
-	var csrPEM string
-	csrPEM = `-----BEGIN CERTIFICATE REQUEST-----
-MIICojCCAYoCAQAwRjELMAkGA1UEBhMCVVMxFDASBgNVBAoTC3NjZXAtY2xpZW50
-MQwwCgYDVQQLEwNNRE0xEzARBgNVBAMTCnNjZXBjbGllbnQwggEiMA0GCSqGSIb3
-DQEBAQUAA4IBDwAwggEKAoIBAQDTW1LFP6jNNmJqmSfAMZnFBhOtNSGyc4okL4vd
-gdFIkKvJgcWFlhQN87zKq+h6PV3qxde4CFz76Plb8lZig/V8YcJTB7FnDkNbaZ7m
-E0EIPajlDYfP1jXYA9iK8Lmy3zmtGw9BYo94XQMtJwuz2Qdi2jv+96i2BYOpa3HT
-UxHYs0xI/o/AmMZPt5OnLjjlR2Swvne9VuusQYaGocSl3+1jbm4DWAPojBeJSVSe
-lMRgfxjQMrr3RLfZB8VQ21ZB+ZjJOkHptZly24i0NsR39RBOnoVdYoyC85/OHGUc
-lKM/x+l4QvjUhu+579bb+Ke0UVO0JZBk758D7D7c4humvIojAgMBAAGgFzAVBgkq
-hkiG9w0BCQcxCBMGc2VjcmV0MA0GCSqGSIb3DQEBCwUAA4IBAQAoZYQS8l5CsOsY
-gVyTtx9T6wREeK4000MQ2CSopzivHwGONY97cOyulbmXkamFofybwahwe9jipQM4
-K/1W1y38wkn0yfJnXfej9xoDP0u9PWuNn4StMvmRR1tuUFYsjuKk1XVuO8xn3YQu
-1QgcX0QiSD+hg4gX1LXNd1UdapnpAHRwUh5MTvHdZIS/SArNd9sPRejc8kL7X6bo
-UnT2RRZ+f4PeetNVLcPW2nz/PiuZenxk/2erUFnTeGTXLPO0/TBQUZlduEB7bGPA
-l7clZSSpZfmnkzR9mpTLPzcGfoUuA5OcQ3OY8iSlF7/52NS/bNocuaUIoHiMVFfp
-HoDXb1Y5
------END CERTIFICATE REQUEST-----`
+	// The cockpit should accept the base64 value only, or the base64 value decorated with header/footer
+	// But the clean call should be only with base64 value
+	csrPEM := `MIICqjCCAZICAQAwTjELMAkGA1UEBhMCVVMxFDASBgNVBAoTC3NjZXAtY2xpZW50
+MQwwCgYDVQQLEwNNRE0xGzAZBgNVBAMTEmNvbW1vbk5hbWUxNjA5MjAyNDCCASIw
+DQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBANGrH6ChMGD8t7eKkv91smuUEVE5
+7im7WQLbvxR79Y9zzSLs54ehDEFEqCXMOgU7yQhJqqH8ZcE6VHnyiihCfoz1WR4h
+Ta6nEzG1z0c8R13gor13IC43/U7l1i2CTkkAevfXGrFK/naqcFCc7aI+EbQRb2H7
+DeBefVfKpcvGV2eW22hHCC5OAWoGCeCR1c5VVTW1DJrCnxnrLb2JxEm1QHkH0EA/
+E7NfvzI4PmoIKmUv7iMLGDJtqEs6OxwsTZ4glKO3BZ56VdQk+RQroRR2jeh/d0/K
+rAGlvUsmmDB27Ej65y2LLAC6Te7vNqhwNI9g/nGSM0x6/Cq/lb1vMICZl4UCAwEA
+AaAXMBUGCSqGSIb3DQEJBzEIEwZzZWNyZXQwDQYJKoZIhvcNAQELBQADggEBACnZ
+sA0EYOEDAiVepolIdXhfQPrjrFO0xDfv4nTKzAc6ygDXsZbEzXJBi9QfOzge25l/
+sj+MlMXbJVdlIxZn0r97k40DqFZ1Twr9ch3DKaPUT8Z6lFcddGH2IG/4XmxhV0Dj
+NQj+Wv04PV0or0+UlFc9nFUooyCUomTSsR2e7fnOjKY0I+XyyrLGYKOdzfAePbPR
+KCVQv9U3bpCoNt4DBWmFiE8iW68Tl3RsBqcez9ytqwAKphMOM68ZLvENtVtkQHuO
+HnMA5M3HB//Vs+OkT+VgDc5yNj5/yXqDq27j7X8p+WGWQWY/NIWaofndeMDdADvM
+AKLoVJ3cuU9Hghi76qE=`
+
+	// a generated GUID, for tests
+	transactionID := "ac84c56f-80cb-4a88-b970-622156f4920a" // commonName "commonName16092024"
+	// transactionID := "c5bc193b-6974-4908-8158-54b48a4b8759" // commonName "commonName13092024_2"
+	// transactionID := "b6ed1fd5-8871-4d6d-936e-cac1ecefcc2b" // commonName "commonName13092024"
 
 	eInput := &kms.CSRImportInput{
 		CSR: csrPEM,
+		Context: kms.Context{
+			AppID:         vaultClient.Config.Credentials.AppID,
+			TransactionID: transactionID,
+		},
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Millisecond*10000))
@@ -310,12 +318,12 @@ HoDXb1Y5
 		fmt.Println("CSR Import request - Success value:" + strconv.FormatBool(eOutput.Success))
 	}
 
-	fmt.Println("Output:", eOutput)
-
 	// Get Status
+	// The CommonName and TransactionID should match (same as the pair used for the /ImportCertificateCSR call)
 	fmt.Println("CSR Status request")
 	eInputStatus := &kms.CSRStatusInput{
-		CommonName: "scepclient",
+		CommonName:    "commonName16092024", // "commonName13092024", // "commonName13092024_2", "scepclient",
+		TransactionID: transactionID,
 	}
 
 	//eOutputStatus, err := vaultClient.CSRStatusWithContext(ctx, eInputStatus)
