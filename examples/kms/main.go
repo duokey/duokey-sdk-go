@@ -265,8 +265,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	//testKeysOperations(vaultClient)
-	testCSROperations(vaultClient)
+	// To run testKeysOperations(), adapt the parameters
+	// For Fabian: launch.json, use the parameters "App to try the sdk with the cockpit demo (not test) - works in December 2024"
+	testKeysOperations(vaultClient)
+	// To run testCSROperations(), adapt the parameters
+	// For Fabian: launch.json, use the parameters "App for SCEP (on cockpit-api-test) - from Pargat - August 2024"
+	//testCSROperations(vaultClient)
 	//testGetSignatureCA(vaultClient)
 }
 
