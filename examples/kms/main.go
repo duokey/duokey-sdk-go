@@ -267,11 +267,30 @@ func main() {
 
 	// To run testKeysOperations(), adapt the parameters
 	// For Fabian: launch.json, use the parameters "App to try the sdk with the cockpit demo (not test) - works in December 2024"
-	testKeysOperations(vaultClient)
+	//	testKeysOperations(vaultClient)
 	// To run testCSROperations(), adapt the parameters
 	// For Fabian: launch.json, use the parameters "App for SCEP (on cockpit-api-test) - from Pargat - August 2024"
-	//testCSROperations(vaultClient)
-	//testGetSignatureCA(vaultClient)
+	// testCSROperations(vaultClient)
+	// testAuthenticateUser(): should be done with other credentials than the ones used by this duokey-sdk-go
+	//	But here testing the functionality with the same credentials
+	testAuthenticateUser(vaultClient, credentials.UserName, credentials.Password)
+	testGetSignatureCA(vaultClient)
+}
+
+// Testing the authentication of a user with a user/pwd
+func testAuthenticateUser(vaultClient *kms.KMS, username string, pwd string) {
+	fmt.Println("Testing AuthenticateUser() by the cockpit - username: " + username)
+
+	token, err := vaultClient.AuthenticateUser(username, pwd)
+	if err != nil {
+		fmt.Println("AuthenticateUser() failed:", err.Error())
+	} else {
+		if token != nil {
+			fmt.Println("AuthenticateUser() succeeded, token received")
+		} else {
+			fmt.Println("AuthenticateUser() strange behavior: no error but no token received")
+		}
+	}
 }
 
 // Testing the implementation of the Cockpit's CSR Import+status operations

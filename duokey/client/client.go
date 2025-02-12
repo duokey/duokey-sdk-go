@@ -206,3 +206,44 @@ func (c *Client) CheckToken() error {
 
 	return nil
 }
+
+// AuthenticateUser
+// Code similar to CheckToken(), but just to validate that a user/pwd is valid for the cockpit
+// Validation is done by requesting a token, which is returned
+func (c *Client) AuthenticateUser(UserName string, Password string) (*oauth2.Token, error) {
+	if c.Config.OAuth2Config == nil {
+		c.Config.Logger.Info("AuthenticateUser() failed: c.Config.OAuth2Config == nil")
+		return nil, errors.New("AuthenticateUser() failed: c.Config.OAuth2Config == nil")
+	}
+
+	c.Config.Logger.Info("AuthenticateUser() - Requesting a token")
+	// The custom transport adds the tenant ID to the header
+	transport := &duoKeyTransport{
+		TenantID:       c.Config.Credentials.TenantID,
+		HeaderTenantID: c.Config.Credentials.HeaderTenantID,
+		Logger:         c.Config.Logger,
+	}
+
+	httpClient := &http.Client{Transport: transport, Timeout: httpClientTimeout}
+	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, httpClient) // c.Config.HTTPClient
+
+	// Password credentials call
+	token, err := c.Config.OAuth2Config.PasswordCredentialsToken(ctx, UserName, Password)
+	if err != nil {
+		c.Config.Logger.Infof("AuthenticateUser() - could not get the token: %v", err)
+		return nil, err
+	}
+
+	// Token validation
+	if !token.Valid() {
+		c.Config.Logger.Infof("AuthenticateUser() - the new token is invalid")
+		return nil, errors.New("AuthenticateUser() - the new token is invalid")
+	}
+
+	if token.TokenType != "Bearer" {
+		c.Config.Logger.Infof("AuthenticateUser() - bad token: expected 'Bearer', got '%s'", token.TokenType)
+		return nil, errors.New("AuthenticateUser() - bad token: expected 'Bearer', got " + token.TokenType)
+	}
+
+	return token, nil
+}
