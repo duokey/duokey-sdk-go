@@ -20,8 +20,8 @@ type Endpoints struct {
 	DecryptRoute   string `mapstructure:"decrypt-route"`
 	ImportRoute    string `mapstructure:"import-route"`
 	GetKeyIdRoute  string `mapstructure:"getkeyid-route"`
-	CSRImportRoute string `mapstructure:"getkeyid-route"`
-	CSRStatusRoute string `mapstructure:"getkeyid-route"`
+	CSRImportRoute string `mapstructure:"csrimport-route"`
+	CSRStatusRoute string `mapstructure:"csrstatus-route"`
 	GetSignatureCA string `mapstructure:"getsignatureca-route"`
 }
 
