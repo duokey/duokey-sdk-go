@@ -267,14 +267,14 @@ func main() {
 
 	// To run testKeysOperations(), adapt the parameters
 	// For Fabian: launch.json, use the parameters "App to try the sdk with the cockpit demo (not test) - works in December 2024"
-	//	testKeysOperations(vaultClient)
+	testKeysOperations(vaultClient)
 	// To run testCSROperations(), adapt the parameters
 	// For Fabian: launch.json, use the parameters "App for SCEP (on cockpit-api-test) - from Pargat - August 2024"
 	// testCSROperations(vaultClient)
 	// testAuthenticateUser(): should be done with other credentials than the ones used by this duokey-sdk-go
 	//	But here testing the functionality with the same credentials
-	testAuthenticateUser(vaultClient, credentials.UserName, credentials.Password)
-	testGetSignatureCA(vaultClient)
+	// testAuthenticateUser(vaultClient, credentials.UserName, credentials.Password)
+	// testGetSignatureCA(vaultClient)
 }
 
 // Testing the authentication of a user with a user/pwd
@@ -398,9 +398,30 @@ func testKeysOperations(vaultClient *kms.KMS) {
 		os.Exit(1)
 	}
 
-	// define the algorithm, according to the key
-	algorithm := "RSA-OAEP-256"
-	// algorithm := "AES-GCM"
+	// Those are examples of RSA-OAEP-256, AES-GCM and AES-CBC calls
+	// Of course the algorithm must be defined according to the key (keyId from the input parameters)
+	//		and it depends on the Cockpit Vault (vaultID from the input parameters))
+	//		At the time of writing this example, March 2025, only the MPC (Sepior) Cockpit vault does handle AES-CBC
+	// ** RSA-OAEP-256 **
+	// algorithm := "RSA-OAEP-256"
+	// iv := ""
+	// aad := ""
+	// payload := "TG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQ="
+	//
+	// ** AES-GCM **
+	// 	iv for AES-GCM must be 12 bytes
+	algorithm := "AES-GCM"
+	iv := "YWJjZGVmZ2hpamts"
+	aad := "bGFiZWw="
+	payload := "TG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQ="
+	//
+	// ** AES-CBC **
+	// payload size must be a multiple of 16 (padding done by the client)
+	// iv for AES-CBC 16 bytes
+	// algorithm := "AES-CBC"
+	// iv := "ceciestunivdes16" // in b64: "Y2VjaWVzdHVuaXZkZXMxNg=="
+	// aad := ""
+	// payload := "ceciestuntexta16" // in b64: "Y2VjaWVzdHVudGV4dGExNg=="
 
 	// Encryption
 	eInput := &kms.EncryptInput{
@@ -408,6 +429,9 @@ func testKeysOperations(vaultClient *kms.KMS) {
 		VaultID:   vaultID,
 		ID:        0,
 		Algorithm: algorithm,
+		// Depending on the algorithm, Iv and Aad can be emtpy strings
+		Iv:  []byte(iv),
+		Aad: []byte(aad),
 		// The context can be set here, or here under as in this example
 		// Context: map[string]string{
 		// 	"appid":  appID,
@@ -415,7 +439,7 @@ func testKeysOperations(vaultClient *kms.KMS) {
 		// 	"http://schemas.microsoft.com/identity/claims/tenantid":     strconv.Itoa(int(tenantID)),
 		// 	"http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn": upn,
 		// },
-		Payload: []byte("TG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQ="),
+		Payload: []byte(payload),
 	}
 
 	eInput.Context = make(map[string]string)
@@ -423,7 +447,7 @@ func testKeysOperations(vaultClient *kms.KMS) {
 	eInput.Context["appid"] = appID // appid Added As It Is Mandatory
 	eInput.Context["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn"] = upn
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Millisecond*10000))
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Millisecond*50000)) // Fab tmp: increase from 10000 to 50000 to have time debuging
 	defer cancel()
 
 	// Start timer
@@ -436,6 +460,8 @@ func testKeysOperations(vaultClient *kms.KMS) {
 		os.Exit(1)
 	}
 
+	fmt.Println("Encrypted payload: " + string(eOutput.Result.EncryptedPayload))
+
 	// Decryption
 	dInput := &kms.DecryptInput{
 		KeyID:     keyID,
@@ -443,8 +469,11 @@ func testKeysOperations(vaultClient *kms.KMS) {
 		ID:        0,
 		Algorithm: algorithm,
 		Payload:   eOutput.Result.EncryptedPayload,
-		// Iv needed only for AES-GCM decryption - will be an empty string for RSA operations and unused, but can be commented out
-		Iv: eOutput.Result.Iv,
+		// Depending on the algorithm, Iv and Aad can be emtpy strings
+		//		Note: eOutput.Result.Iv is empty after AES-GCM operation, use the one given for the Encrypt
+		Iv:  []byte(iv),
+		Aad: []byte(aad),
+		Tag: eOutput.Result.Tag, // Tag is needed for AES-GCM
 	}
 
 	// Context Information Added As It Is Mandatory
@@ -461,6 +490,12 @@ func testKeysOperations(vaultClient *kms.KMS) {
 
 	fmt.Println("Decryption request - Success:", dOutput.Success)
 	fmt.Println("Decrypted payload: " + string(dOutput.Result.Payload))
+
+	if string(dOutput.Result.Payload) != payload {
+		fmt.Println("ERROR: decrypted payload differs from original payload: " + payload)
+	} else {
+		fmt.Println("SUCCESS: decrypted payload and original payload are identical")
+	}
 
 	// Get Key Id
 	getKeyInput := &kms.GetKeyIdInput{

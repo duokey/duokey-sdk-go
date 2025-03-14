@@ -96,11 +96,12 @@ type EncryptInput struct {
 	Algorithm string            `json:"algorithm,omitempty"`
 	Context   map[string]string `json:"context,omitempty"`
 	Payload   []byte            `json:"payload"`
+	Iv        []byte            `json:"iv"`
+	Aad       []byte            `json:"aad"`
 }
 
 // EncryptOutput contains the deserialized payload returned by the DuoKey server.
 // Validation is done by calling request.Send.
-// For AES-GCM operation, the Iv is also found in the payload and needed for the decrypt operation
 type EncryptOutput struct {
 	Success bool `json:"success"`
 	Result  struct {
@@ -109,6 +110,7 @@ type EncryptOutput struct {
 		EncryptedPayload string `json:"encryptedPayload" validate:"nonzero"`
 		ID               uint32 `json:"id"`
 		Iv               string `json:"initializationVector"`
+		Tag              string `json:"messageAuthenticationCode"`
 	} `json:"result" validate:"nonzero"`
 	TargetURL           *string `json:"targetUrl"`
 	Error               *string `json:"error"`
@@ -237,7 +239,7 @@ func (k *KMS) encryptRequestByCockpit(input *EncryptInput) (req *request.Request
 const opDecrypt = "Decrypt"
 
 // DecryptInput contains a payload to be decrypted by DuoKey.
-// An Iv can be passed if needed
+// Iv/Aad/Tag can be passed if needed depending on the algorithm
 // Validation is done by calling request.New.
 type DecryptInput struct {
 	ID        uint32            `json:"id"`
@@ -246,7 +248,9 @@ type DecryptInput struct {
 	Algorithm string            `json:"algorithm,omitempty"`
 	Context   map[string]string `json:"context,omitempty"`
 	Payload   string            `json:"payload"`
-	Iv        string            `json:"iv"`
+	Iv        []byte            `json:"iv"`
+	Aad       []byte            `json:"aad"`
+	Tag       string            `json:"tag"`
 }
 
 // DecryptOutput contains the deserialized payload returned by the DuoKey server.
