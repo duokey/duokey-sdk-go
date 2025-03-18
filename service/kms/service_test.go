@@ -83,6 +83,7 @@ func mockEncrypt(body []byte) ([]byte, error) {
 			EncryptedPayload string `json:"encryptedPayload" validate:"nonzero"`
 			ID               uint32 `json:"id"`
 			Iv               string `json:"initializationVector"`
+			Tag              string `json:"messageAuthenticationCode"`
 		}{
 			KeyID:            jsonData.KeyID,
 			EncryptedPayload: string(jsonData.Payload),
