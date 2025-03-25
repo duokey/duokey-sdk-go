@@ -28,18 +28,20 @@ var (
 	tenantID       uint32
 	headerTenantID string
 
-	// Keys + Encryption/decryption client
 	baseURL string
+	// Keys + Encryption/decryption client
 	// Routes are no more required as parameters - default values set in NewClient
-	// encryptRoute  string
-	// decryptRoute  string
-	// importRoute   string
-	// getKeyIdRoute string
+	creatKeyRoute  string
+	deleteKeyRoute string
+	encryptRoute   string
+	decryptRoute   string
+	importRoute    string
+	getKeyIdRoute  string
 
-	// // CSR + SCEP
-	// csrImportRoute string
-	// csrStatusRoute string
-	// getSignatureCA string
+	// CSR + SCEP
+	csrImportRoute string
+	csrStatusRoute string
+	getSignatureCA string
 
 	// Vault and key to be used for operations
 	vaultID string
@@ -165,69 +167,68 @@ func getConfig() {
 	}
 
 	// Routes are no more required as parameters - default values set in NewClient
-	// switch {
-	// case os.Getenv("DUOKEY_CREATEKEY_ROUTE") != "":
-	// 	creatKeyRoute = os.Getenv("DUOKEY_CREATEKEY_ROUTE")
-	// default:
-	// 	fmt.Println("DUOKEY_CREATEKEY_ROUTE is not defined")
-	// 	os.Exit(1)
-	// }
+	switch {
+	case os.Getenv("DUOKEY_CREATEKEY_ROUTE") != "":
+		creatKeyRoute = os.Getenv("DUOKEY_CREATEKEY_ROUTE")
+	default:
+		fmt.Println("DUOKEY_CREATEKEY_ROUTE is not defined - default value will be used")
+	}
 
-	// switch {
-	// case os.Getenv("DUOKEY_ENCRYPT_ROUTE") != "":
-	// 	encryptRoute = os.Getenv("DUOKEY_ENCRYPT_ROUTE")
-	// default:
-	// 	fmt.Println("DUOKEY_ENCRYPT_ROUTE is not defined")
-	// 	os.Exit(1)
-	// }
+	switch {
+	case os.Getenv("DUOKEY_DELETEKEY_ROUTE") != "":
+		deleteKeyRoute = os.Getenv("DUOKEY_DELETEKEY_ROUTE")
+	default:
+		fmt.Println("DUOKEY_DELETEKEY_ROUTE is not defined - default value will be used")
+	}
 
-	// switch {
-	// case os.Getenv("DUOKEY_DECRYPT_ROUTE") != "":
-	// 	decryptRoute = os.Getenv("DUOKEY_DECRYPT_ROUTE")
-	// default:
-	// 	fmt.Println("DUOKEY_DECRYPT_ROUTE is not defined")
-	// 	os.Exit(1)
-	// }
+	switch {
+	case os.Getenv("DUOKEY_ENCRYPT_ROUTE") != "":
+		encryptRoute = os.Getenv("DUOKEY_ENCRYPT_ROUTE")
+	default:
+		fmt.Println("DUOKEY_ENCRYPT_ROUTE is not defined - default value will be used")
+	}
 
-	// switch {
-	// case os.Getenv("DUOKEY_IMPORT_ROUTE") != "":
-	// 	importRoute = os.Getenv("DUOKEY_IMPORT_ROUTE")
-	// default:
-	// 	fmt.Println("DUOKEY_IMPORT_ROUTE is not defined")
-	// 	os.Exit(1)
-	// }
+	switch {
+	case os.Getenv("DUOKEY_DECRYPT_ROUTE") != "":
+		decryptRoute = os.Getenv("DUOKEY_DECRYPT_ROUTE")
+	default:
+		fmt.Println("DUOKEY_DECRYPT_ROUTE is not defined - default value will be used")
+	}
 
-	// switch {
-	// case os.Getenv("DUOKEY_GETKEYID_ROUTE") != "":
-	// 	getKeyIdRoute = os.Getenv("DUOKEY_GETKEYID_ROUTE")
-	// default:
-	// 	fmt.Println("DUOKEY_GETKEYID_ROUTE is not defined")
-	// 	os.Exit(1)
-	// }
+	switch {
+	case os.Getenv("DUOKEY_IMPORT_ROUTE") != "":
+		importRoute = os.Getenv("DUOKEY_IMPORT_ROUTE")
+	default:
+		fmt.Println("DUOKEY_IMPORT_ROUTE is not defined - default value will be used")
+	}
 
-	// switch {
-	// case os.Getenv("DUOKEY_CSRIMPORT_ROUTE") != "":
-	// 	csrImportRoute = os.Getenv("DUOKEY_CSRIMPORT_ROUTE")
-	// default:
-	// 	fmt.Println("DUOKEY_CSRIMPORT_ROUTE is not defined")
-	// 	os.Exit(1)
-	// }
+	switch {
+	case os.Getenv("DUOKEY_GETKEYID_ROUTE") != "":
+		getKeyIdRoute = os.Getenv("DUOKEY_GETKEYID_ROUTE")
+	default:
+		fmt.Println("DUOKEY_GETKEYID_ROUTE is not defined - default value will be used")
+	}
 
-	// switch {
-	// case os.Getenv("DUOKEY_CSRSTATUS_ROUTE") != "":
-	// 	csrStatusRoute = os.Getenv("DUOKEY_CSRSTATUS_ROUTE")
-	// default:
-	// 	fmt.Println("DUOKEY_CSRSTATUS_ROUTE is not defined")
-	// 	os.Exit(1)
-	// }
+	switch {
+	case os.Getenv("DUOKEY_CSRIMPORT_ROUTE") != "":
+		csrImportRoute = os.Getenv("DUOKEY_CSRIMPORT_ROUTE")
+	default:
+		fmt.Println("DUOKEY_CSRIMPORT_ROUTE is not defined - default value will be used")
+	}
 
-	// switch {
-	// case os.Getenv("DUOKEY_GETSIGNATURECA_ROUTE") != "":
-	// 	getSignatureCA = os.Getenv("DUOKEY_GETSIGNATURECA_ROUTE")
-	// default:
-	// 	fmt.Println("DUOKEY_GETSIGNATURECA_ROUTE is not defined")
-	// 	os.Exit(1)
-	// }
+	switch {
+	case os.Getenv("DUOKEY_CSRSTATUS_ROUTE") != "":
+		csrStatusRoute = os.Getenv("DUOKEY_CSRSTATUS_ROUTE")
+	default:
+		fmt.Println("DUOKEY_CSRSTATUS_ROUTE is not defined - default value will be used")
+	}
+
+	switch {
+	case os.Getenv("DUOKEY_GETSIGNATURECA_ROUTE") != "":
+		getSignatureCA = os.Getenv("DUOKEY_GETSIGNATURECA_ROUTE")
+	default:
+		fmt.Println("DUOKEY_GETSIGNATURECA_ROUTE is not defined - default value will be used")
+	}
 
 }
 
@@ -258,17 +259,19 @@ func main() {
 		TenantID:       tenantID,
 	}
 
-	// Routes are no more needed as parameters
+	// Routes are no more mandatory as parameters
 	// If not set, default value will be set in NewClient()
 	endpoints := kms.Endpoints{
-		BaseURL: baseURL,
-		// EncryptRoute:   encryptRoute,
-		// DecryptRoute:   decryptRoute,
-		// ImportRoute:    importRoute,
-		// GetKeyIdRoute:  getKeyIdRoute,
-		// CSRImportRoute: csrImportRoute,
-		// CSRStatusRoute: csrStatusRoute,
-		// GetSignatureCA: getSignatureCA,
+		BaseURL:             baseURL,
+		CreateKeyRoute:      creatKeyRoute,
+		DeleteKeyRoute:      deleteKeyRoute,
+		EncryptRoute:        encryptRoute,
+		DecryptRoute:        decryptRoute,
+		ImportRoute:         importRoute,
+		GetKeyIdRoute:       getKeyIdRoute,
+		CSRImportRoute:      csrImportRoute,
+		CSRStatusRoute:      csrStatusRoute,
+		GetSignatureCARoute: getSignatureCA,
 	}
 
 	vaultClient, err := kms.NewClient(credentials, endpoints)
@@ -279,7 +282,8 @@ func main() {
 
 	// To run testKeysOperations(), adapt the parameters
 	// For Fabian: launch.json, use the parameters "App to try the sdk with the cockpit demo (not test) - works in December 2024"
-	testKeysOperations(vaultClient)
+	testCreateKeysOperations(vaultClient)
+	// testKeysOperations(vaultClient)
 	// To run testCSROperations(), adapt the parameters
 	// For Fabian: launch.json, use the parameters "App for SCEP (on cockpit-api-test) - from Pargat - August 2024"
 	// testCSROperations(vaultClient)
@@ -521,4 +525,8 @@ func testKeysOperations(vaultClient *kms.KMS) {
 		fmt.Println("GetKeyId request failed:", err.Error())
 		os.Exit(1)
 	}
+}
+
+func testCreateKeysOperations(vaultClient *kms.KMS) {
+
 }

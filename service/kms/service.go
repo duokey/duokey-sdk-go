@@ -16,6 +16,8 @@ type KMS struct {
 // are customizable)
 type Endpoints struct {
 	BaseURL             string `mapstructure:"base-url"`
+	CreateKeyRoute      string `mapstructure:"createkey-route"`
+	DeleteKeyRoute      string `mapstructure:"deletekey-route"`
 	EncryptRoute        string `mapstructure:"encrypt-route"`
 	DecryptRoute        string `mapstructure:"decrypt-route"`
 	ImportRoute         string `mapstructure:"import-route"`
@@ -38,6 +40,12 @@ func NewClientWithLogger(credentials credentials.Config, endpoints Endpoints, lo
 	}
 
 	// Set default routes values if no specific value was set
+	if endpoints.CreateKeyRoute == "" {
+		endpoints.CreateKeyRoute = "api/services/app/Keys/CreateOrEdit"
+	}
+	if endpoints.DeleteKeyRoute == "" {
+		endpoints.DeleteKeyRoute = "api/services/app/Keys/Delete"
+	}
 	if endpoints.EncryptRoute == "" {
 		endpoints.EncryptRoute = "/api/services/app/Keys/CreateEncryptRequest"
 	}

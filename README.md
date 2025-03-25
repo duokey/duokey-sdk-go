@@ -52,6 +52,12 @@ Define the following environment variables:
 | DUOKEY_PASSWORD | The password |
 | DUOKEY_SCOPE | The scope of the token |
 | DUOKEY_BASE_URL | The base URL of the DuoKey API |
+
+Optional environment variables - default values are used if not set:
+| Envirnment variable | Description |
+|--- |--- |
+| DUOKEY_CREATEKEY_ROUTE | The DuoKey API route to be used to create a new key |
+| DUOKEY_DELETEKEY_ROUTE | The DuoKey API route to be used to delete an existing key |
 | DUOKEY_ENCRYPT_ROUTE | The DuoKey API route to be used to make an encryption request |
 | DUOKEY_DECRYPT_ROUTE | The DuoKey API route to be used to make a decryption request |
 | DUOKEY_IMPORT_ROUTE | The DuoKey API route to be used to import a key |
