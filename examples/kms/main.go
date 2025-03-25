@@ -409,15 +409,15 @@ func testKeysOperations(vaultClient *kms.KMS) {
 	// payload := "TG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQ="
 	//
 	// ** AES-GCM **
-	// 	iv for AES-GCM must be 12 bytes
+	// 		iv for AES-GCM should be 12 bytes (recommandation for optimal security and performance)
 	algorithm := "AES-GCM"
 	iv := "YWJjZGVmZ2hpamts"
 	aad := "bGFiZWw="
 	payload := "TG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQ="
 	//
 	// ** AES-CBC **
-	// payload size must be a multiple of 16 (padding done by the client)
-	// iv for AES-CBC 16 bytes
+	// 		payload size must be a multiple of 16 (padding done by the client)
+	// 		iv for AES-CBC 16 bytes
 	// algorithm := "AES-CBC"
 	// iv := "ceciestunivdes16" // in b64: "Y2VjaWVzdHVuaXZkZXMxNg=="
 	// aad := ""
