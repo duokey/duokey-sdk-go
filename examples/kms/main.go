@@ -240,7 +240,7 @@ func getConfig() {
 *		In former versions, was "3", used for Sepior
 * For AES-GCM operations:
 *	Algorithm: "AES-GCM",
-*	And the Iv, received from the Encrypt operation, can be passed in the DecryptInput
+*		the Iv+Tag, received from the Encrypt operation, must be passed in the DecryptInput
  */
 func main() {
 
