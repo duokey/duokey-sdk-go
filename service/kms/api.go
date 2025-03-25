@@ -110,6 +110,7 @@ type CreateKeyInput struct {
 	Reason           int               `json:"reason,omitempty"`
 }
 
+// SuccessOutput can be used as the output of different routes that return a Success boolean
 type SuccessOutput struct {
 	Success bool `json:"success,omitempty"`
 }
@@ -500,7 +501,7 @@ type GetKeyByNameInput struct {
 	Name string `schema:"name" url:"name"`
 }
 
-// Get Key By Id
+// Get Key by Name
 func (k *KMS) GetKeyByName(input *GetKeyByNameInput) (*GetKeyOutput, error) {
 
 	req, out := k.getKeyByNameRequest(input)
@@ -508,7 +509,7 @@ func (k *KMS) GetKeyByName(input *GetKeyByNameInput) (*GetKeyOutput, error) {
 	return out, req.Send()
 }
 
-// GetKeyIdWithContext is the same operation as GetKeyId. It is however possible
+// GetKeyByNameWithContext is the same operation as GetKeyByName. It is however possible
 // to pass a non-nil context.
 func (k *KMS) GetKeyByNameWithContext(ctx context.Context, input *GetKeyByNameInput) (*GetKeyOutput, error) {
 
@@ -542,15 +543,17 @@ func (k *KMS) getKeyByNameRequest(input *GetKeyByNameInput) (req *request.Reques
 	return
 }
 
-// GetKeyByName
+// DeleteKey
 const opDeleteKey = "DeleteKey"
 
-// GetKeyIdInput retrives key information.
+// DeletekeyKeyInput retrives key information.
+// Id: the internal Id of the key (and not the ExternalID)
+// Id can be retrieved by calling GetKeyByName, and then found in Result.Key.Id
 type DeletekeyKeyInput struct {
 	Id string `schema:"id" url:"id"`
 }
 
-// Get Key By Id
+// Delete key
 func (k *KMS) DeleteKey(input *DeletekeyKeyInput) (*SuccessOutput, error) {
 
 	req, out := k.deleteKeyRequest(input)
@@ -558,7 +561,7 @@ func (k *KMS) DeleteKey(input *DeletekeyKeyInput) (*SuccessOutput, error) {
 	return out, req.Send()
 }
 
-// GetKeyIdWithContext is the same operation as GetKeyId. It is however possible
+// DeleteKeyWithContext is the same operation as DeleteKey. It is however possible
 // to pass a non-nil context.
 func (k *KMS) DeleteKeyWithContext(ctx context.Context, input *DeletekeyKeyInput) (*SuccessOutput, error) {
 
