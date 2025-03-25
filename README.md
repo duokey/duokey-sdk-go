@@ -37,34 +37,33 @@ The metadata of the SDK dependencies can be found in the Go module file [`go.mod
 
 Define the following environment variables:
 
-| Envirnment variable | Description |
+|Envirnment variable | Description |
 |--- |--- |
-| DUOKEY_APP_ID | The application ID |
-| DUOKEY_UPN | The user principal name |
-| DUOKEY_ISSUER | The named external system that provides identity and API access by issuing an OAuth access token |
-| DUOKEY_CLIENT_ID | The client id for credentials to query the DuoKey API |
-| DUOKEY_CLIENT_SECRET | The client secret for credentials to query the DuoKey API |
-| DUOKEY_VAULT_ID | The vault to use for encryption and decryption |
-| DUOKEY_KEY_ID | The DuoKey key ID to use for encryption and decryption |
-| DUOKEY_HEADER_TENANT_ID | |
-| DUOKEY_TENANT_ID | The tenant id for the DuoKey organization |
-| DUOKEY_USERNAME | The username |
-| DUOKEY_PASSWORD | The password |
-| DUOKEY_SCOPE | The scope of the token |
-| DUOKEY_BASE_URL | The base URL of the DuoKey API |
+|DUOKEY_APP_ID | The application ID |
+|DUOKEY_UPN | The user principal name |
+|DUOKEY_ISSUER | The named external system that provides identity and API access by issuing an OAuth access token |
+|DUOKEY_CLIENT_ID | The client id for credentials to query the DuoKey API |
+|DUOKEY_CLIENT_SECRET | The client secret for credentials to query the DuoKey API |
+|DUOKEY_VAULT_ID | The vault to use for encryption and decryption |
+|DUOKEY_KEY_ID | The DuoKey key ID to use for encryption and decryption |
+|DUOKEY_HEADER_TENANT_ID | |
+|DUOKEY_TENANT_ID | The tenant id for the DuoKey organization |
+|DUOKEY_USERNAME | The username |
+|DUOKEY_PASSWORD | The password |
+|DUOKEY_SCOPE | The scope of the token |
+|DUOKEY_BASE_URL | The base URL of the DuoKey API |
 
 Optional environment variables - default values are used if not set:
-| Envirnment variable | Description |
+|Envirnment variable | Description |
 |--- |--- |
-| DUOKEY_CREATEKEY_ROUTE | The DuoKey API route to be used to create a new key |
-| DUOKEY_DELETEKEY_ROUTE | The DuoKey API route to be used to delete an existing key |
-| DUOKEY_ENCRYPT_ROUTE | The DuoKey API route to be used to make an encryption request |
-| DUOKEY_DECRYPT_ROUTE | The DuoKey API route to be used to make a decryption request |
-| DUOKEY_IMPORT_ROUTE | The DuoKey API route to be used to import a key |
-| DUOKEY_CSRIMPORT_ROUTE | The DuoKey API route to be used to import a CSR |
-| DUOKEY_CSRSTATUS_ROUTE | The DuoKey API route to be used to import get the CSR Status and get the signed certificate |
-| DUOKEY_GETSIGNATURECA_ROUTE | The DuoKey API route to be used to get the CA signature |
-
+|DUOKEY_CREATEKEY_ROUTE | The DuoKey API route to be used to create a new key |
+|DUOKEY_DELETEKEY_ROUTE | The DuoKey API route to be used to delete an existing key |
+|DUOKEY_ENCRYPT_ROUTE | The DuoKey API route to be used to make an encryption request |
+|DUOKEY_DECRYPT_ROUTE | The DuoKey API route to be used to make a decryption request |
+|DUOKEY_IMPORT_ROUTE | The DuoKey API route to be used to import a key |
+|DUOKEY_CSRIMPORT_ROUTE | The DuoKey API route to be used to import a CSR |
+|DUOKEY_CSRSTATUS_ROUTE | The DuoKey API route to be used to import get the CSR Status and get the signed certificate |
+|DUOKEY_GETSIGNATURECA_ROUTE | The DuoKey API route to be used to get the CA signature |
 
 Run the example:
 
