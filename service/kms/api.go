@@ -81,6 +81,86 @@ func (k *KMS) importRequest(input *ImportInput) (req *request.Request, output *I
 	return
 }
 
+// Create Key
+const opCreateKey = "CreateKey"
+
+type CreateKeyInput struct {
+	VaultID          string            `json:"vaultid" validate:"nonzero"`
+	Context          map[string]string `json:"context,omitempty"`
+	KeyName          string            `json:"name,omitempty"`
+	KeyType          string            `json:"type,omitempty"`
+	KeySize          int               `json:"size,omitempty"`
+	IsDecrypt        bool              `json:"isDecrypt,omitempty"`
+	IsEncrypt        bool              `json:"isEncrypt,omitempty"`
+	IsSign           bool              `json:"isSign,omitempty"`
+	IsVerify         bool              `json:"isVerify,omitempty"`
+	Id               string            `json:"id,omitempty"`
+	IsEnabled        bool              `json:"isEnabled,omitempty"`
+	State            int               `json:"state,omitempty"` // 0 = preActive, 1=active
+	IsWrap           bool              `json:"isWrap,omitempty"`
+	IsUnwrap         bool              `json:"isUnwrap,omitempty"`
+	IsDeriveKey      bool              `json:"isDeriveKey,omitempty"`
+	IsMacGenerate    bool              `json:"isMacGenerate,omitempty"`
+	IsMacVerify      bool              `json:"isMacVerify,omitempty"`
+	IsAppManageable  bool              `json:"isAppManageable,omitempty"`
+	IsAgreeKey       bool              `json:"isAgreeKey,omitempty"`
+	IsExport         bool              `json:"isExport,omitempty"`
+	IsAuditLogEnable bool              `json:"isAuditLogEnable,omitempty"`
+	PublishPublicKey bool              `json:"publishPublicKey,omitempty"`
+	Reason           int               `json:"reason,omitempty"`
+}
+
+type SuccessOutput struct {
+	Success bool `json:"success,omitempty"`
+}
+
+// CreateKey API operation for DuoKey
+func (k *KMS) CreateKey(input *CreateKeyInput) (*SuccessOutput, error) {
+
+	req, out := k.createKeyRequest(input)
+
+	return out, req.Send()
+}
+
+// CreateKeyWithContext is the same operation as CreateKey. It is however possible
+// to pass a non-nil context.
+func (k *KMS) CreateKeyWithContext(ctx context.Context, input *CreateKeyInput) (*SuccessOutput, error) {
+
+	req, out := k.createKeyRequest(input)
+	req.SetContext(ctx)
+
+	return out, req.Send()
+}
+
+func (k *KMS) createKeyRequest(input *CreateKeyInput) (req *request.Request, output *SuccessOutput) {
+
+	op := &request.Operation{
+		Name:       opCreateKey,
+		HTTPMethod: http.MethodPost,
+		BaseURL:    k.Endpoints.BaseURL,
+		Route:      k.Endpoints.CreateKeyRoute,
+	}
+
+	if input == nil {
+		input = &CreateKeyInput{}
+	}
+
+	// Create an empty context if needed
+	if input.Context == nil {
+		input.Context = make(map[string]string)
+	}
+
+	// Merge the input context and the mandatory context
+	for key, value := range k.Client.GetMandatoryContext() {
+		input.Context[key] = value
+	}
+
+	output = &SuccessOutput{}
+	req = k.NewRequest(op, input, output)
+
+	return
+}
+
 // Encryption
 const opEncrypt = "Encrypt"
 
@@ -156,7 +236,7 @@ func (k *KMS) encryptRequestRSAByClient(input *EncryptInput, ctx context.Context
 		ExternalID: input.KeyID,
 	}
 
-	var getKeyIdOutput *GetKeyIdOutput
+	var getKeyIdOutput *GetKeyOutput
 	var err error
 
 	if ctx != nil {
@@ -355,9 +435,9 @@ type KeyData struct {
 	Id               string `json:"id"`
 }
 
-// GetKeyIdOutput contains key information.
+// GetKeyOutput contains key information, from getKeyID or getKeyByName requests
 // Validation is done by calling request.Send.
-type GetKeyIdOutput struct {
+type GetKeyOutput struct {
 	Success bool `json:"success"`
 	Result  struct {
 		Key       KeyData `json:"key" validate:"nonzero"`
@@ -371,7 +451,7 @@ type GetKeyIdOutput struct {
 }
 
 // Get Key By Id
-func (k *KMS) GetKeyId(input *GetKeyIdInput) (*GetKeyIdOutput, error) {
+func (k *KMS) GetKeyId(input *GetKeyIdInput) (*GetKeyOutput, error) {
 
 	req, out := k.getKeyIdRequest(input)
 
@@ -380,7 +460,7 @@ func (k *KMS) GetKeyId(input *GetKeyIdInput) (*GetKeyIdOutput, error) {
 
 // GetKeyIdWithContext is the same operation as GetKeyId. It is however possible
 // to pass a non-nil context.
-func (k *KMS) GetKeyIdWithContext(ctx context.Context, input *GetKeyIdInput) (*GetKeyIdOutput, error) {
+func (k *KMS) GetKeyIdWithContext(ctx context.Context, input *GetKeyIdInput) (*GetKeyOutput, error) {
 
 	req, out := k.getKeyIdRequest(input)
 	req.SetContext(ctx)
@@ -388,7 +468,7 @@ func (k *KMS) GetKeyIdWithContext(ctx context.Context, input *GetKeyIdInput) (*G
 	return out, req.Send()
 }
 
-func (k *KMS) getKeyIdRequest(input *GetKeyIdInput) (req *request.Request, output *GetKeyIdOutput) {
+func (k *KMS) getKeyIdRequest(input *GetKeyIdInput) (req *request.Request, output *GetKeyOutput) {
 
 	// This is used to get query parameter format from struct =>  queryParams ::  map[externalId:[2e974659-64e8-4e8a-b702-c5133620bd0f]]
 	// queryParams.Encode() will convert it into string query parameter => externalId=2e974659-64e8-4e8a-b702-c5133620bd0f
@@ -406,7 +486,107 @@ func (k *KMS) getKeyIdRequest(input *GetKeyIdInput) (req *request.Request, outpu
 		input = &GetKeyIdInput{}
 	}
 
-	output = &GetKeyIdOutput{}
+	output = &GetKeyOutput{}
+	req = k.NewRequest(op, input, output)
+
+	return
+}
+
+// GetKeyByName
+const opGetKeyByName = "GetKeyByName"
+
+// GetKeyIdInput retrives key information.
+type GetKeyByNameInput struct {
+	Name string `schema:"name" url:"name"`
+}
+
+// Get Key By Id
+func (k *KMS) GetKeyByName(input *GetKeyByNameInput) (*GetKeyOutput, error) {
+
+	req, out := k.getKeyByNameRequest(input)
+
+	return out, req.Send()
+}
+
+// GetKeyIdWithContext is the same operation as GetKeyId. It is however possible
+// to pass a non-nil context.
+func (k *KMS) GetKeyByNameWithContext(ctx context.Context, input *GetKeyByNameInput) (*GetKeyOutput, error) {
+
+	req, out := k.getKeyByNameRequest(input)
+	req.SetContext(ctx)
+
+	return out, req.Send()
+}
+
+func (k *KMS) getKeyByNameRequest(input *GetKeyByNameInput) (req *request.Request, output *GetKeyOutput) {
+
+	// This is used to get query parameter format from struct
+	// queryParams.Encode() will convert it into string
+	queryParams, _ := query.Values(input)
+
+	op := &request.Operation{
+		Name:        opGetKeyByName,
+		HTTPMethod:  http.MethodGet,
+		BaseURL:     k.Endpoints.BaseURL,
+		Route:       k.Endpoints.GetKeyByNameRoute,
+		QueryParams: queryParams.Encode(),
+	}
+
+	if input == nil {
+		input = &GetKeyByNameInput{}
+	}
+
+	output = &GetKeyOutput{}
+	req = k.NewRequest(op, input, output)
+
+	return
+}
+
+// GetKeyByName
+const opDeleteKey = "DeleteKey"
+
+// GetKeyIdInput retrives key information.
+type DeletekeyKeyInput struct {
+	Id string `schema:"id" url:"id"`
+}
+
+// Get Key By Id
+func (k *KMS) DeleteKey(input *DeletekeyKeyInput) (*SuccessOutput, error) {
+
+	req, out := k.deleteKeyRequest(input)
+
+	return out, req.Send()
+}
+
+// GetKeyIdWithContext is the same operation as GetKeyId. It is however possible
+// to pass a non-nil context.
+func (k *KMS) DeleteKeyWithContext(ctx context.Context, input *DeletekeyKeyInput) (*SuccessOutput, error) {
+
+	req, out := k.deleteKeyRequest(input)
+	req.SetContext(ctx)
+
+	return out, req.Send()
+}
+
+func (k *KMS) deleteKeyRequest(input *DeletekeyKeyInput) (req *request.Request, output *SuccessOutput) {
+
+	// This is used to get query parameter format from struct
+	// queryParams.Encode() will convert it into string
+	queryParams, _ := query.Values(input)
+
+	op := &request.Operation{
+		Name:        opDeleteKey,
+		HTTPMethod:  http.MethodDelete,
+		BaseURL:     k.Endpoints.BaseURL,
+		Route:       k.Endpoints.DeleteKeyRoute,
+		QueryParams: queryParams.Encode(),
+	}
+
+	if input == nil {
+		input = &DeletekeyKeyInput{}
+	}
+
+	output = &SuccessOutput{}
 	req = k.NewRequest(op, input, output)
 
 	return

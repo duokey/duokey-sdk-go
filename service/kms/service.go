@@ -22,6 +22,7 @@ type Endpoints struct {
 	DecryptRoute        string `mapstructure:"decrypt-route"`
 	ImportRoute         string `mapstructure:"import-route"`
 	GetKeyIdRoute       string `mapstructure:"getkeyid-route"`
+	GetKeyByNameRoute   string `mapstructure:"getkeybyname-route"`
 	CSRImportRoute      string `mapstructure:"csrimport-route"`
 	CSRStatusRoute      string `mapstructure:"csrstatus-route"`
 	GetSignatureCARoute string `mapstructure:"getsignatureca-route"`
@@ -41,10 +42,10 @@ func NewClientWithLogger(credentials credentials.Config, endpoints Endpoints, lo
 
 	// Set default routes values if no specific value was set
 	if endpoints.CreateKeyRoute == "" {
-		endpoints.CreateKeyRoute = "api/services/app/Keys/CreateOrEdit"
+		endpoints.CreateKeyRoute = "/api/services/app/Keys/CreateOrEdit"
 	}
 	if endpoints.DeleteKeyRoute == "" {
-		endpoints.DeleteKeyRoute = "api/services/app/Keys/Delete"
+		endpoints.DeleteKeyRoute = "/api/services/app/Keys/Delete"
 	}
 	if endpoints.EncryptRoute == "" {
 		endpoints.EncryptRoute = "/api/services/app/Keys/CreateEncryptRequest"
@@ -57,6 +58,9 @@ func NewClientWithLogger(credentials credentials.Config, endpoints Endpoints, lo
 	}
 	if endpoints.GetKeyIdRoute == "" {
 		endpoints.GetKeyIdRoute = "/api/services/app/Keys/GetKeyId"
+	}
+	if endpoints.GetKeyByNameRoute == "" {
+		endpoints.GetKeyByNameRoute = "/api/services/app/Keys/GetKeyByName"
 	}
 	if endpoints.CSRImportRoute == "" {
 		endpoints.CSRImportRoute = "/api/services/app/CertificateRequests/ImportCertificateCSR"

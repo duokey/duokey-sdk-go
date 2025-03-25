@@ -31,12 +31,13 @@ var (
 	baseURL string
 	// Keys + Encryption/decryption client
 	// Routes are no more required as parameters - default values set in NewClient
-	creatKeyRoute  string
-	deleteKeyRoute string
-	encryptRoute   string
-	decryptRoute   string
-	importRoute    string
-	getKeyIdRoute  string
+	creatKeyRoute     string
+	deleteKeyRoute    string
+	encryptRoute      string
+	decryptRoute      string
+	importRoute       string
+	getKeyIdRoute     string
+	getKeyByNameRoute string
 
 	// CSR + SCEP
 	csrImportRoute string
@@ -210,6 +211,13 @@ func getConfig() {
 	}
 
 	switch {
+	case os.Getenv("DUOKEY_GETKEYBYNAME_ROUTE") != "":
+		getKeyByNameRoute = os.Getenv("DUOKEY_GETKEYBYNAME_ROUTE")
+	default:
+		fmt.Println("DUOKEY_GETKEYBYNAME_ROUTE is not defined - default value will be used")
+	}
+
+	switch {
 	case os.Getenv("DUOKEY_CSRIMPORT_ROUTE") != "":
 		csrImportRoute = os.Getenv("DUOKEY_CSRIMPORT_ROUTE")
 	default:
@@ -269,6 +277,7 @@ func main() {
 		DecryptRoute:        decryptRoute,
 		ImportRoute:         importRoute,
 		GetKeyIdRoute:       getKeyIdRoute,
+		GetKeyByNameRoute:   getKeyByNameRoute,
 		CSRImportRoute:      csrImportRoute,
 		CSRStatusRoute:      csrStatusRoute,
 		GetSignatureCARoute: getSignatureCA,
@@ -283,7 +292,7 @@ func main() {
 	// To run testKeysOperations(), adapt the parameters
 	// For Fabian: launch.json, use the parameters "App to try the sdk with the cockpit demo (not test) - works in December 2024"
 	testCreateKeysOperations(vaultClient)
-	// testKeysOperations(vaultClient)
+	//testKeysOperations(vaultClient)
 	// To run testCSROperations(), adapt the parameters
 	// For Fabian: launch.json, use the parameters "App for SCEP (on cockpit-api-test) - from Pargat - August 2024"
 	// testCSROperations(vaultClient)
@@ -528,5 +537,100 @@ func testKeysOperations(vaultClient *kms.KMS) {
 }
 
 func testCreateKeysOperations(vaultClient *kms.KMS) {
+	createKey := false
+	deleteKey := true
+	//keyName := "fab-AES-128-test-2"
+	keyName := "fab-RSA-2048-test-1"
 
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Millisecond*50000)) // Fab tmp: increase from 10000 to 50000 to have time debuging
+	defer cancel()
+
+	if createKey {
+		// Creating a AES-128 key
+		// eInput := &kms.CreateKeyInput{
+		// 	VaultID:          vaultID,
+		// 	KeyName:          keyName,
+		// 	KeyType:          "AES 128",
+		// 	KeySize:          128,
+		// 	IsEnabled:        true,
+		// 	State:            1, // 0 = preActive, 1=active
+		// 	Id:               "",
+		// 	IsDecrypt:        true,
+		// 	IsEncrypt:        true,
+		// 	IsAuditLogEnable: true,
+		// 	PublishPublicKey: false,
+		// 	Reason:           0,
+		// }
+
+		// Creating a RSA-20248 key
+		eInput := &kms.CreateKeyInput{
+			VaultID:          vaultID,
+			KeyName:          keyName,
+			KeyType:          "RSA 2048",
+			KeySize:          2048,
+			IsEnabled:        true,
+			State:            1, // 0 = preActive, 1=active
+			Id:               "",
+			IsDecrypt:        true,
+			IsEncrypt:        false,
+			IsAuditLogEnable: true,
+			PublishPublicKey: false,
+			Reason:           0,
+		}
+
+		eInput.Context = make(map[string]string)
+		eInput.Context["appid"] = appID // appid Added As It Is Mandatory
+		eInput.Context["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn"] = upn
+
+		// Start timer
+		defer timeTrack(time.Now())
+
+		fmt.Println("CreateKey request")
+		eOutput, err := vaultClient.CreateKeyWithContext(ctx, eInput)
+		if err != nil {
+			fmt.Println("CreateKey request failed:", err.Error())
+			os.Exit(1)
+		}
+
+		if eOutput.Success {
+			fmt.Println("CreateKey result: Success=True")
+		} else {
+			fmt.Println("CreateKey result: Strange behavior as no error was raised but Success=False")
+		}
+	}
+
+	fmt.Println("GetKeyByName request")
+	// GetKeyByName to get the key ID for further key deletion
+	getKeyInput := &kms.GetKeyByNameInput{
+		Name: keyName,
+	}
+
+	getKeyOutput, err := vaultClient.GetKeyByNameWithContext(ctx, getKeyInput)
+	if err != nil {
+		fmt.Println("GetKeyByName request failed:", err.Error())
+		os.Exit(1)
+	}
+
+	fmt.Println("keyOutput.Result.Key.Name : ", getKeyOutput.Result.Key.Name)
+	fmt.Println("keyOutput.Result.Key.ExternalId : ", getKeyOutput.Result.Key.ExternalId)
+	fmt.Println("keyOutput.Result.Key.Id : ", getKeyOutput.Result.Key.Id)
+
+	if deleteKey {
+		// Delette key that was created for testing
+		fmt.Println("DeleteKey request")
+		deleteKeyInput := &kms.DeletekeyKeyInput{
+			Id: getKeyOutput.Result.Key.Id, // the key ID is needed for deletion (and not the key exernalID)
+		}
+
+		deleteKeyOutput, err := vaultClient.DeleteKeyWithContext(ctx, deleteKeyInput)
+		if err != nil {
+			fmt.Println("DeleteKey request failed:", err.Error())
+			os.Exit(1)
+		}
+		if deleteKeyOutput.Success {
+			fmt.Println("DeleteKey result: Success=True")
+		} else {
+			fmt.Println("DeleteKey result: Strange behavior as no error was raised but Success=False")
+		}
+	}
 }
