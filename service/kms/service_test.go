@@ -99,7 +99,9 @@ func newClientWithMockServer(credentials credentials.Config, endpoints Endpoints
 	config := duokey.Config{
 		Credentials: credentials,
 		HTTPClient:  httpClient,
+		Logger:      duokey.NewDefaultLogger(),
 	}
+
 	client := client.Client{Config: config}
 
 	return &KMS{Endpoints: &endpoints, Client: &client}
@@ -296,7 +298,7 @@ func TestEncryptWithTimeout(t *testing.T) {
 				if err != nil {
 					t.Errorf("Unexpected error: " + err.Error())
 				} else {
-					assert.Equal(t, []byte("TG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQsIGNvbnNlY3RldHVyIGFkaXBpc2NpbmcgZWxpdCwgc2VkIGRvIGVpdXNtb2QgdGVtcG9yIGluY2lkaWR1bnQgdXQgbGFib3JlIGV0IGRvbG9yZSBtYWduYSBhbGlxdWEu"), eOutput.Result.EncryptedPayload)
+					assert.Equal(t, string(eInput.Payload), eOutput.Result.EncryptedPayload, "The two plaintexts should be the same.")
 				}
 			}
 		})
