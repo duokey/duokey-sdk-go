@@ -556,7 +556,7 @@ func (k *KMS) getSignatureCARequest(input *GetSignatureCAInput) (req *request.Re
 		Name:        opGetSignatureCA,
 		HTTPMethod:  http.MethodGet,
 		BaseURL:     k.Endpoints.BaseURL,
-		Route:       k.Endpoints.GetSignatureCA,
+		Route:       k.Endpoints.GetSignatureCARoute,
 		QueryParams: queryParams.Encode(),
 	}
 
