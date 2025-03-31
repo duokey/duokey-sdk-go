@@ -537,46 +537,48 @@ func testKeysOperations(vaultClient *kms.KMS) {
 }
 
 func testCreateKeysOperations(vaultClient *kms.KMS) {
-	createKey := false
-	deleteKey := true
-	//keyName := "fab-AES-128-test-2"
-	keyName := "fab-RSA-2048-test-1"
+	createKey := true
+	deleteKey := false
+	keyName := "fab-AES-128-test-2-desc-comment"
+	//keyName := "fab-RSA-2048-test-1"
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Millisecond*50000)) // Fab tmp: increase from 10000 to 50000 to have time debuging
 	defer cancel()
 
 	if createKey {
 		// Creating a AES-128 key
-		// eInput := &kms.CreateKeyInput{
-		// 	VaultID:          vaultID,
-		// 	KeyName:          keyName,
-		// 	KeyType:          "AES 128",
-		// 	KeySize:          128,
-		// 	IsEnabled:        true,
-		// 	State:            1, // 0 = preActive, 1=active
-		// 	Id:               "",
-		// 	IsDecrypt:        true,
-		// 	IsEncrypt:        true,
-		// 	IsAuditLogEnable: true,
-		// 	PublishPublicKey: false,
-		// 	Reason:           0,
-		// }
-
-		// Creating a RSA-20248 key
 		eInput := &kms.CreateKeyInput{
 			VaultID:          vaultID,
 			KeyName:          keyName,
-			KeyType:          "RSA 2048",
-			KeySize:          2048,
+			KeyType:          "AES 128",
+			KeySize:          128,
+			Description:      "Description test from duokey-sdk-go",
+			Comment:          "A comment test from duokey-sdk-go",
 			IsEnabled:        true,
 			State:            1, // 0 = preActive, 1=active
 			Id:               "",
 			IsDecrypt:        true,
-			IsEncrypt:        false,
+			IsEncrypt:        true,
 			IsAuditLogEnable: true,
 			PublishPublicKey: false,
 			Reason:           0,
 		}
+
+		// Creating a RSA-20248 key
+		// eInput := &kms.CreateKeyInput{
+		// 	VaultID:          vaultID,
+		// 	KeyName:          keyName,
+		// 	KeyType:          "RSA 2048",
+		// 	KeySize:          2048,
+		// 	IsEnabled:        true,
+		// 	State:            1, // 0 = preActive, 1=active
+		// 	Id:               "",
+		// 	IsDecrypt:        true,
+		// 	IsEncrypt:        false,
+		// 	IsAuditLogEnable: true,
+		// 	PublishPublicKey: false,
+		// 	Reason:           0,
+		// }
 
 		eInput.Context = make(map[string]string)
 		eInput.Context["appid"] = appID // appid Added As It Is Mandatory
@@ -614,6 +616,7 @@ func testCreateKeysOperations(vaultClient *kms.KMS) {
 	fmt.Println("keyOutput.Result.Key.Name : ", getKeyOutput.Result.Key.Name)
 	fmt.Println("keyOutput.Result.Key.ExternalId : ", getKeyOutput.Result.Key.ExternalId)
 	fmt.Println("keyOutput.Result.Key.Id : ", getKeyOutput.Result.Key.Id)
+	fmt.Println("keyOutput.Result.Key.Comment : ", getKeyOutput.Result.Key.Comment)
 
 	if deleteKey {
 		// Delette key that was created for testing

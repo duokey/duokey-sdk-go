@@ -90,6 +90,8 @@ type CreateKeyInput struct {
 	KeyName          string            `json:"name,omitempty"`
 	KeyType          string            `json:"type,omitempty"`
 	KeySize          int               `json:"size,omitempty"`
+	Description      string            `json:"description,omitempty"`
+	Comment          string            `json:"comment,omitempty"`
 	IsDecrypt        bool              `json:"isDecrypt,omitempty"`
 	IsEncrypt        bool              `json:"isEncrypt,omitempty"`
 	IsSign           bool              `json:"isSign,omitempty"`
