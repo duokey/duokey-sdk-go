@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -291,8 +292,8 @@ func main() {
 
 	// To run testKeysOperations(), adapt the parameters
 	// For Fabian: launch.json, use the parameters "App to try the sdk with the cockpit demo (not test) - works in December 2024"
-	testCreateKeysOperations(vaultClient)
-	//testKeysOperations(vaultClient)
+	// testCreateKeysOperations(vaultClient)
+	testKeysOperations(vaultClient)
 	// To run testCSROperations(), adapt the parameters
 	// For Fabian: launch.json, use the parameters "App for SCEP (on cockpit-api-test) - from Pargat - August 2024"
 	// testCSROperations(vaultClient)
@@ -409,6 +410,25 @@ func testGetSignatureCA(vaultClient *kms.KMS) {
 	fmt.Println("Get Signature CA request - result:" + eOutput.Result)
 }
 
+// Add padding for PKCS#7
+func pkcs7Pad(data []byte, blockSize int) []byte {
+	padding := blockSize - (len(data) % blockSize)
+	padtext := bytes.Repeat([]byte{byte(padding)}, padding)
+	return append(data, padtext...)
+}
+
+// Remove padding for PKCS#7
+func pkcs7Unpad(data []byte) ([]byte, error) {
+	length := len(data)
+	padding := int(data[length-1])
+
+	if padding > length {
+		return nil, fmt.Errorf("pkcs7Unpad() - Padding invalide")
+	}
+
+	return data[:length-padding], nil
+}
+
 func testKeysOperations(vaultClient *kms.KMS) {
 	resp, err := http.Get("https://api.ipify.org?format=text")
 	if err != nil {
@@ -431,14 +451,16 @@ func testKeysOperations(vaultClient *kms.KMS) {
 	// algorithm := "RSA-OAEP-256"
 	// iv := ""
 	// aad := ""
-	// payload := "TG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQ="
+	// message := "TG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQ="
+	// payload := []byte(message)
 	//
 	// ** AES-GCM **
 	// 		iv for AES-GCM should be 12 bytes (recommandation for optimal security and performance)
 	algorithm := "AES-GCM"
 	iv := "YWJjZGVmZ2hpamts"
 	aad := "bGFiZWw="
-	payload := "TG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQ="
+	message := "This is my original message" // "TG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQ="
+	payload := []byte(message)
 	//
 	// ** AES-CBC **
 	// 		payload size must be a multiple of 16 (padding done by the client)
@@ -446,7 +468,8 @@ func testKeysOperations(vaultClient *kms.KMS) {
 	// algorithm := "AES-CBC"
 	// iv := "ceciestunivdes16" // in b64: "Y2VjaWVzdHVuaXZkZXMxNg=="
 	// aad := ""
-	// payload := "ceciestuntexta16" // in b64: "Y2VjaWVzdHVudGV4dGExNg=="
+	// message := "ceciestuntexta16" // in b64: "Y2VjaWVzdHVudGV4dGExNg=="
+	// payload := pkcs7Pad([]byte(message), aes.BlockSize)
 
 	// Encryption
 	eInput := &kms.EncryptInput{
@@ -464,7 +487,7 @@ func testKeysOperations(vaultClient *kms.KMS) {
 		// 	"http://schemas.microsoft.com/identity/claims/tenantid":     strconv.Itoa(int(tenantID)),
 		// 	"http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn": upn,
 		// },
-		Payload: []byte(payload),
+		Payload: payload,
 	}
 
 	eInput.Context = make(map[string]string)
@@ -478,7 +501,7 @@ func testKeysOperations(vaultClient *kms.KMS) {
 	// Start timer
 	defer timeTrack(time.Now())
 
-	fmt.Println("Encryption request")
+	fmt.Println("*** Encryption request ***")
 	eOutput, err := vaultClient.EncryptWithContext(ctx, eInput)
 	if err != nil {
 		fmt.Println("Encryption request failed:", err.Error())
@@ -505,7 +528,7 @@ func testKeysOperations(vaultClient *kms.KMS) {
 	dInput.Context = make(map[string]string)
 	dInput.Context["appid"] = appID
 
-	fmt.Println("Decryption request")
+	fmt.Println("*** Decryption request ***")
 	//dOutput, err := vaultClient.Decrypt(dInput)
 	dOutput, err := vaultClient.DecryptWithContext(ctx, dInput)
 	if err != nil {
@@ -514,15 +537,36 @@ func testKeysOperations(vaultClient *kms.KMS) {
 	}
 
 	fmt.Println("Decryption request - Success:", dOutput.Success)
-	fmt.Println("Decrypted payload: " + string(dOutput.Result.Payload))
 
-	if string(dOutput.Result.Payload) != payload {
-		fmt.Println("ERROR: decrypted payload differs from original payload: " + payload)
-	} else {
-		fmt.Println("SUCCESS: decrypted payload and original payload are identical")
+	// Compare the decrypted output with the original text
+	compareResults := true
+	resultPayload := string(dOutput.Result.Payload)
+	// For AES-CBC -> unpad the output
+	if algorithm == "AES-CBC" {
+		fmt.Printf("AES-CBC Decrypt() - result size before unpadding: %v\n", len(dOutput.Result.Payload))
+		unpaddedBytes, err := pkcs7Unpad(dOutput.Result.Payload)
+		if err != nil {
+			fmt.Println("ERROR - AES-CBC Decrypt() - unpadding error:", err)
+			compareResults = false // do not compare the results, an error occured
+		} else {
+			fmt.Printf("AES-CBC Decrypt() - result size after unpadding: %v\n", len(unpaddedBytes))
+			resultPayload = string(unpaddedBytes)
+		}
+	}
+
+	// Decrypt is fully successfull (AES-CBC unpadding applied if necessary)
+	if compareResults {
+		fmt.Println("Decrypted payload: " + resultPayload)
+
+		if resultPayload != message {
+			fmt.Println("ERROR: decrypted payload differs from original payload: " + message)
+		} else {
+			fmt.Println("SUCCESS: decrypted payload and original payload are identical")
+		}
 	}
 
 	// Get Key Id
+	fmt.Println("*** Get Key by ID request ***")
 	getKeyInput := &kms.GetKeyIdInput{
 		ExternalID: keyID,
 	}
@@ -539,7 +583,7 @@ func testKeysOperations(vaultClient *kms.KMS) {
 func testCreateKeysOperations(vaultClient *kms.KMS) {
 	createKey := true
 	deleteKey := false
-	keyName := "fab-AES-128-test-2-desc-comment"
+	keyName := "fab-AES-128-test-software-vault"
 	//keyName := "fab-RSA-2048-test-1"
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Millisecond*50000)) // Fab tmp: increase from 10000 to 50000 to have time debuging
