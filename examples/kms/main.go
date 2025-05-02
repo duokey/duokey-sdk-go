@@ -284,6 +284,8 @@ func main() {
 		GetSignatureCARoute: getSignatureCA,
 	}
 
+	// Note: a 3 optional parameter allows to set the checkTokenTimeOut in seconds
+	// Example: vaultClient, err := kms.NewClient(credentials, endpoints, 5) -> 5 seconds timeout
 	vaultClient, err := kms.NewClient(credentials, endpoints)
 	if err != nil {
 		fmt.Println("Error:", err.Error())
@@ -293,13 +295,13 @@ func main() {
 	// To run testKeysOperations(), adapt the parameters
 	// For Fabian: launch.json, use the parameters "App to try the sdk with the cockpit demo (not test) - works in December 2024"
 	// testCreateKeysOperations(vaultClient)
-	testKeysOperations(vaultClient)
+	// testKeysOperations(vaultClient)
 	// To run testCSROperations(), adapt the parameters
 	// For Fabian: launch.json, use the parameters "App for SCEP (on cockpit-api-test) - from Pargat - August 2024"
 	// testCSROperations(vaultClient)
 	// testAuthenticateUser(): should be done with other credentials than the ones used by this duokey-sdk-go
 	//	But here testing the functionality with the same credentials
-	// testAuthenticateUser(vaultClient, credentials.UserName, credentials.Password)
+	testAuthenticateUser(vaultClient, credentials.UserName, credentials.Password)
 	// testGetSignatureCA(vaultClient)
 }
 

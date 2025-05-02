@@ -29,13 +29,26 @@ type Endpoints struct {
 }
 
 // New checks the credentials and returns a KMS client with the default logger.
-func NewClient(credentials credentials.Config, endpoints Endpoints) (*KMS, error) {
-	return NewClientWithLogger(credentials, endpoints, nil)
+// checkTokenTimeOut: The timeout in seconds for the cockpit call to get/check the token is optional with a default value if not passed
+func NewClient(credentials credentials.Config, endpoints Endpoints, checkTokenTimeOut ...int) (*KMS, error) {
+	checkTokenTimeOutSeconds := 10
+
+	if len(checkTokenTimeOut) > 0 {
+		checkTokenTimeOutSeconds = checkTokenTimeOut[0]
+	}
+	return NewClientWithLogger(credentials, endpoints, nil, checkTokenTimeOutSeconds)
 }
 
 // New checks the credentials and returns a KMS client with a custom logger.
-func NewClientWithLogger(credentials credentials.Config, endpoints Endpoints, logger duokey.Logger) (*KMS, error) {
-	client, err := client.New(credentials, logger)
+// checkTokenTimeOut: The timeout in seconds for the cockpit call to get/check the token is optional with a default value if not passed
+func NewClientWithLogger(credentials credentials.Config, endpoints Endpoints, logger duokey.Logger, checkTokenTimeOut ...int) (*KMS, error) {
+	checkTokenTimeOutSeconds := 10
+
+	if len(checkTokenTimeOut) > 0 {
+		checkTokenTimeOutSeconds = checkTokenTimeOut[0]
+	}
+
+	client, err := client.New(credentials, logger, checkTokenTimeOutSeconds)
 	if err != nil {
 		return nil, err
 	}

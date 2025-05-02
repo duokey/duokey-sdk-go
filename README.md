@@ -33,11 +33,20 @@ The metadata of the SDK dependencies can be found in the Go module file [`go.mod
 }
 }
 ```
+### Parameters
+The parameters are passed as arguments when instanciating a client with `kms.NewClient()` or `NewClientWithLogger()`.
+
+About the timeouts for the http calls to the Cockpit:
+- For token operations as checkToken() and the similar AuthenticateUser(), the timeout is passed as an optional last parameter to `kms.NewClient()` or `NewClientWithLogger()`
+- For the different operation calls, a context with timeout can be passed, using the function suffixed `WithContext`, as `GetKeyIdWithContext()`, `EncryptWithContext()`, etc.
+
+For the expected parameters, see the `Example` section here under.
+
 ### Example
 
-Define the following environment variables:
+To run the example, define the following environment variables that will be passed as parameter to instanciate the client:
 
-|Envirnment variable | Description |
+|Environment variable | Description |
 |--- |--- |
 |DUOKEY_APP_ID | The application ID |
 |DUOKEY_UPN | The user principal name |

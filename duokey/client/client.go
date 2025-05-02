@@ -15,9 +15,8 @@ import (
 )
 
 const (
-	httpClientTimeout time.Duration = time.Second * 10
-	context_api_id    string        = "appid"
-	context_tenant_id string        = "tenantid"
+	context_api_id    string = "appid"
+	context_tenant_id string = "tenantid"
 )
 
 // Client implements the base client request and response handling. All
@@ -71,10 +70,12 @@ func (t *duoKeyTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 // New returns a pointer to a new DuoKey client.
 // If the credentials are correct, we obtain a DuoKey access token.
 // We configure an HTTP client using the token.
-// The token is tested/renewed when it expires (see the comment of client.CheckToken())
+// The token is tested/renewed when it expires (see the comment of client.checkToken())
 //
-//	client.CheckToken() is currently called each time a new request is prepared ((c *Client) NewRequest)
-func New(creds credentials.Config, logger duokey.Logger) (*Client, error) {
+//	client.checkToken() is currently called each time a new request is prepared ((c *Client) NewRequest)
+//
+// checkTokenTimeOut: The timeout in seconds for the cockpit call to get/check the token
+func New(creds credentials.Config, logger duokey.Logger, checkTokenTimeOut int) (*Client, error) {
 
 	var clientConfig duokey.Config
 
@@ -96,22 +97,24 @@ func New(creds credentials.Config, logger duokey.Logger) (*Client, error) {
 
 	// Prepare the wrapper for the oauth2Client.Transport to log all requests
 	transportWithLogger := &transportWithLogger{
-		//Transport: oauth2Client.Transport, // will be set here under by client.CheckToken()
+		//Transport: oauth2Client.Transport, // will be set here under by client.checkToken()
 		Logger: clientConfig.Logger,
 	}
 
 	// Configure the new DuoKey client
-	// clientConfig.Token will be set here under by client.CheckToken()
+	// clientConfig.Token will be set here under by client.checkToken()
 	clientConfig.Credentials = creds
 	clientConfig.OAuth2Config = oauth2Config
 	clientConfig.HTTPClient = &http.Client{
 		Transport: transportWithLogger,
 	}
 
+	clientConfig.CheckTokenTimeOut = time.Duration(checkTokenTimeOut) * time.Second
+
 	client := &Client{Config: clientConfig}
 
 	// Prepare the first token for the client
-	client.CheckToken()
+	client.checkToken()
 
 	return client, nil
 }
@@ -121,14 +124,13 @@ func (c *Client) NewRequest(operation *request.Operation, params interface{}, da
 
 	// Renew the token if necessary
 	// if an error occurs, nothing is done currently, the Cockpit call will fail
-	c.CheckToken()
+	c.checkToken()
 
 	return request.New(c.Config, operation, params, data)
 
 }
 
-// GetMandatoryContext returns a map storing the context required by the DuoKey server. At the moment, this function is
-// called by encryptRequest and decryptRequest.
+// GetMandatoryContext returns a map storing the context required by the DuoKey server for some of the calls (encryptRequest, decryptRequest, etc.)
 func (c *Client) GetMandatoryContext() map[string]string {
 	context := make(map[string]string)
 
@@ -138,7 +140,7 @@ func (c *Client) GetMandatoryContext() map[string]string {
 	return context
 }
 
-// CheckToken make sure that the client and its transport have a valid token
+// checkToken make sure that the client and its transport have a valid token
 // If no token is present (it is the case when first creating the client)
 //
 //	or if the token has expired, then a new token is requested
@@ -147,12 +149,12 @@ func (c *Client) GetMandatoryContext() map[string]string {
 //
 //	For machine-to-machine (M2M) communication where microservices access protected APIs, the Client Credentials Grant is the preferred method:
 //	When the Access Token expires, the microservice simply requests a new token using the same client credentials, without the need for a refresh token.
-func (c *Client) CheckToken() error {
+func (c *Client) checkToken() error {
 	renew := false
 
 	if c.Config.OAuth2Config == nil {
-		c.Config.Logger.Info("CheckToken() failed: c.Config.OAuth2Config == nil")
-		return errors.New("CheckToken() failed: c.Config.OAuth2Config == nil")
+		c.Config.Logger.Info("checkToken() failed: c.Config.OAuth2Config == nil")
+		return errors.New("checkToken() failed: c.Config.OAuth2Config == nil")
 	}
 
 	if c.Config.Token != nil {
@@ -160,11 +162,11 @@ func (c *Client) CheckToken() error {
 		renew = !c.Config.Token.Valid()
 	} else { // no token yet
 		renew = true
-		c.Config.Logger.Info("CheckToken() - No token present")
+		c.Config.Logger.Info("checkToken() - No token present")
 	}
 
 	if renew {
-		c.Config.Logger.Info("CheckToken() - A new token is requested")
+		c.Config.Logger.Info("checkToken() - A new token is requested")
 		// The custom transport adds the tenant ID to the header
 		transport := &duoKeyTransport{
 			TenantID:       c.Config.Credentials.TenantID,
@@ -172,25 +174,25 @@ func (c *Client) CheckToken() error {
 			Logger:         c.Config.Logger,
 		}
 
-		httpClient := &http.Client{Transport: transport, Timeout: httpClientTimeout}
+		httpClient := &http.Client{Transport: transport, Timeout: c.Config.CheckTokenTimeOut}
 		ctx := context.WithValue(context.Background(), oauth2.HTTPClient, httpClient)
 
 		// Password credentials call
 		token, err := c.Config.OAuth2Config.PasswordCredentialsToken(ctx, c.Config.Credentials.UserName, c.Config.Credentials.Password)
 		if err != nil {
-			c.Config.Logger.Infof("CheckToken() - could not get the token: %v", err)
+			c.Config.Logger.Infof("checkToken() - could not get the token: %v", err)
 			return err
 		}
 
 		// Token validation
 		if !token.Valid() {
-			c.Config.Logger.Infof("CheckToken() - the new token is invalid")
-			return errors.New("CheckToken() - the new token is invalid")
+			c.Config.Logger.Infof("checkToken() - the new token is invalid")
+			return errors.New("checkToken() - the new token is invalid")
 		}
 
 		if token.TokenType != "Bearer" {
-			c.Config.Logger.Infof("CheckToken() - bad token: expected 'Bearer', got '%s'", token.TokenType)
-			return errors.New("CheckToken() - bad token: expected 'Bearer', got " + token.TokenType)
+			c.Config.Logger.Infof("checkToken() - bad token: expected 'Bearer', got '%s'", token.TokenType)
+			return errors.New("checkToken() - bad token: expected 'Bearer', got " + token.TokenType)
 		}
 
 		// Get an OAuth 2 client
@@ -199,16 +201,16 @@ func (c *Client) CheckToken() error {
 		// save the new token and Transport
 		c.Config.Token = token // store the token to check its validity before each call and manage expiration
 		c.Config.HTTPClient.Transport = oauth2Client.Transport
-		c.Config.Logger.Info("CheckToken() - Token renewed")
+		c.Config.Logger.Info("checkToken() - Token renewed")
 	} else {
-		c.Config.Logger.Info("CheckToken() - Token is still valid")
+		c.Config.Logger.Info("checkToken() - Token is still valid")
 	}
 
 	return nil
 }
 
 // AuthenticateUser
-// Code similar to CheckToken(), but just to validate that a user/pwd is valid for the cockpit
+// Code similar to checkToken(), but just to validate that a user/pwd is valid for the cockpit
 // Validation is done by requesting a token, which is returned
 func (c *Client) AuthenticateUser(UserName string, Password string) (*oauth2.Token, error) {
 	if c.Config.OAuth2Config == nil {
@@ -224,7 +226,7 @@ func (c *Client) AuthenticateUser(UserName string, Password string) (*oauth2.Tok
 		Logger:         c.Config.Logger,
 	}
 
-	httpClient := &http.Client{Transport: transport, Timeout: httpClientTimeout}
+	httpClient := &http.Client{Transport: transport, Timeout: c.Config.CheckTokenTimeOut}
 	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, httpClient) // c.Config.HTTPClient
 
 	// Password credentials call
