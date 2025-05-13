@@ -24,27 +24,36 @@ import (
 
 const (
 	// Routes
-	encryptRoute      = "/api/services/app/Keys/CreateEncryptRequest"
-	decryptRoute      = "/api/services/app/Keys/CreateDecryptRequest"
-	getKeyByNameRoute = "/api/services/app/Keys/GetKeyByName"
-	oauthGetTokenURL  = "/connect/token"
+	encryptRoute        = "/api/services/app/Keys/CreateEncryptRequest"
+	decryptRoute        = "/api/services/app/Keys/CreateDecryptRequest"
+	getKeyByNameRoute   = "/api/services/app/Keys/GetKeyByName"
+	getKeyByIdRoute     = "/api/services/app/Keys/GetKeyId"
+	createKeyRoute      = "/api/services/app/Keys/CreateKeyRequest"
+	deleteKeyRoute      = "/api/services/app/Keys/Delete"
+	csrImportRoute      = "/api/services/app/CertificateRequests/ImportCertificateCSR"
+	csrStatusRoute      = "/api/services/app/CertificateRequests/CertificateRequestStatus"
+	getSignatureCARoute = "/api/services/app/SCEP/GetSignatureCAForScepServer"
+
+	oauthGetTokenURL = "/connect/token"
 	// Constants for tests
-	existingKeyName    = "existingKeyName"
-	nonexistingKeyName = "unexistingKeyName"
+	// Currently those constant allow to define if a call will succeed or fail
+	// They are thus passed as parameters for the call to the sdk, and used by the mocked routes to answer the request
+	//
+	// existingName/nonexistingName used for key names, for CSR common name, etc.
+	existingName    = "existingName"
+	nonexistingName = "unexistingName"
+	// existingUserPWD/nonexistingUserPWD used for user authentification
 	existingUserPWD    = "existingUserPWD"
 	nonexistingUserPWD = "nonexistingUserPWD"
+	// existingId/nonexistingId are GUID used for keyId, ScepId, etc.
+	existingGuidId    = "c2d3e6e9-7f47-4b9b-92d4-91e6c8b7e3f8"
+	nonexistingGuidId = "f84c0b47-9df8-49e4-94ae-3f6fdc3e13f5"
+	// PEM for CSRImport operations
+	// The cockpit should accept the base64 value only, or the base64 value decorated with header/footer
+	// However, for tests, I do not need a real PEM but only a way to identify and simulate a valid or invalid PEM
+	validPEM   = "thisIsAFakeValidPEM"
+	invalidPEM = "thisIsAFakeInvalidPEM"
 )
-
-// "DUOKEY_CREATEKEY_ROUTE": "/api/services/app/Keys/CreateKeyRequest",
-// "DUOKEY_DELETEKEY_ROUTE": "/api/services/app/Keys/Delete",
-// "DUOKEY_ENCRYPT_ROUTE": "/api/services/app/Keys/CreateEncryptRequest",
-// "DUOKEY_DECRYPT_ROUTE": "/api/services/app/Keys/CreateDecryptRequest",
-// "DUOKEY_IMPORT_ROUTE": "/api/services/app/Keys/Import",
-// "DUOKEY_GETKEYID_ROUTE": "/api/services/app/Keys/GetKeyId",
-// "DUOKEY_GETKEYBYNAME_ROUTE": "/api/services/app/Keys/GetKeyByName",
-// "DUOKEY_CSRIMPORT_ROUTE": "/api/services/app/CertificateRequests/ImportCertificateCSR",
-// "DUOKEY_CSRSTATUS_ROUTE": "/api/services/app/CertificateRequests/CertificateRequestStatus",
-// "DUOKEY_GETSIGNATURECA_ROUTE": "/api/services/app/SCEP/GetSignatureCAForScepServer"
 
 func mockDecrypt(body []byte) ([]byte, error) {
 
@@ -116,7 +125,99 @@ func mockEncrypt(body []byte) ([]byte, error) {
 	return reply.Bytes(), err
 }
 
-// if nonexistingUserPWD -> return an error
+// mockCreateKey() simulates a CreateKey operation
+// Success if AES+128, otherwise HTTP Error 500
+func mockCreateKey(body []byte) ([]byte, error) {
+	var jsonData CreateKeyInput
+
+	if err := json.NewDecoder(bytes.NewReader(body)).Decode(&jsonData); err != nil {
+		return nil, err
+	}
+
+	if jsonData.KeyType != "AES 128" || jsonData.KeySize != 128 {
+		return nil, errors.New("Server Internal error")
+	}
+
+	output := SuccessOutput{
+		Success: true,
+	}
+
+	reply := &bytes.Buffer{}
+	err := json.NewEncoder(reply).Encode(output)
+	return reply.Bytes(), err
+}
+
+// mockDeleteKey() simulates a key deletion, success if the id is existingGuidId otherwise HTTP Error 500
+func mockDeleteKey(body []byte) ([]byte, error) {
+	var jsonData DeletekeyKeyInput
+
+	if err := json.NewDecoder(bytes.NewReader(body)).Decode(&jsonData); err != nil {
+		return nil, err
+	}
+
+	if jsonData.Id != existingGuidId {
+		return nil, errors.New("Server Internal error")
+	}
+
+	output := SuccessOutput{
+		Success: true,
+	}
+
+	reply := &bytes.Buffer{}
+	err := json.NewEncoder(reply).Encode(output)
+	return reply.Bytes(), err
+}
+
+// mockCSRImport() CSRImport does a 500 if the PEM is invalid or if the CSR already exists
+// here just do a HTTP Error 500 if invalid
+func mockCSRImport(body []byte) ([]byte, error) {
+	var jsonData CSRImportInput
+	if err := json.NewDecoder(bytes.NewReader(body)).Decode(&jsonData); err != nil {
+		return nil, err
+	}
+
+	if jsonData.CSR == invalidPEM {
+		return nil, errors.New("Server Internal error")
+	}
+
+	output := CSRImportOutput{
+		Success: true,
+	}
+
+	reply := &bytes.Buffer{}
+	err := json.NewEncoder(reply).Encode(output)
+	return reply.Bytes(), err
+}
+
+// mockCSRStatus() should not return a 500 if CSR not found, but a StatusRequest with:
+//
+//	Success:true
+//	Status:NotFound
+//	Certificate:
+//
+// If existingName then return status "Pending"
+func mockCSRStatus(body []byte) ([]byte, error) {
+	var jsonData CSRStatusInput
+	if err := json.NewDecoder(bytes.NewReader(body)).Decode(&jsonData); err != nil {
+		return nil, err
+	}
+
+	output := CSRStatusOutput{
+		Success: true,
+	}
+
+	if jsonData.CommonName == existingName {
+		output.Result.Status = "Pending"
+	} else {
+		output.Result.Status = "NotFound"
+	}
+
+	reply := &bytes.Buffer{}
+	err := json.NewEncoder(reply).Encode(output)
+	return reply.Bytes(), err
+}
+
+// mockGetToken() if nonexistingUserPWD -> return an error
 // otherwise return a dummy token that will pass the tests:
 //
 //	Token.Valid() is called (checking that AccessToken is not empty and token not expired)
@@ -136,13 +237,50 @@ func mockGetToken(user string, password string) ([]byte, error) {
 	}
 }
 
-// The cockpit currently trickers a http error 500 when a key is not found
+// mockGetKeyByName()
+// The cockpit currently sends a http error 500 when a key is not found
 func mockGetKeyByName(name string) ([]byte, error) {
 	var output GetKeyOutput
 
-	if name == existingKeyName {
+	if name == existingName {
 		output = GetKeyOutput{
 			Success: true,
+		}
+	} else {
+		return nil, errors.New("Server Internal error")
+	}
+
+	reply := &bytes.Buffer{}
+	err := json.NewEncoder(reply).Encode(output)
+	return reply.Bytes(), err
+}
+
+// The cockpit currently sends a http error 500 when a key is not found
+func mockGetKeyById(keyId string) ([]byte, error) {
+	var output GetKeyOutput
+
+	if keyId == existingGuidId {
+		output = GetKeyOutput{
+			Success: true,
+		}
+	} else {
+		return nil, errors.New("Server Internal error")
+	}
+
+	reply := &bytes.Buffer{}
+	err := json.NewEncoder(reply).Encode(output)
+	return reply.Bytes(), err
+}
+
+// The cockpit currently sends a http error 500 when the scep App is not found
+func mockGetSignatureCA(scepExternalId string) ([]byte, error) {
+	var output GetSignatureCAOutput
+
+	if scepExternalId == existingGuidId {
+		// In case of success, the 'result' field should contain the certificates signature chain, but this is not tested currently
+		output = GetSignatureCAOutput{
+			Success: true,
+			Result:  "dummyValueInsteadOfCertificatesChain",
 		}
 	} else {
 		return nil, errors.New("Server Internal error")
@@ -202,7 +340,8 @@ func newClientWithStandardMockServer(t *testing.T) (*KMS, *httptest.Server) {
 			t.Error("newClientWithStandardMockServer() - TenantID: bad format")
 		}
 
-		// getKeyByName is a Get with parameters
+		// When calling Get routes as GetKeyByName, RequestURI contains the parameters as well
+		// Therefor parse the RequestURI to get the Path only and know which route is called
 		parsedURL, err := url.Parse(r.RequestURI)
 		if err != nil {
 			t.Errorf("newClientWithStandardMockServer() url.parse() error: %v", err.Error())
@@ -225,12 +364,37 @@ func newClientWithStandardMockServer(t *testing.T) (*KMS, *httptest.Server) {
 			if body, err = mockDecrypt(payload); err != nil {
 				t.Fail()
 			}
+		case createKeyRoute:
+			if payload, err = ioutil.ReadAll(r.Body); err != nil {
+				t.Fail()
+			}
+
+			if body, err = mockCreateKey(payload); err != nil {
+				// The cockpit returns a 500 when create key failed
+				http.Error(w, "Internal Server error - expected when key not found", http.StatusInternalServerError)
+			}
+		case deleteKeyRoute:
+			if payload, err = ioutil.ReadAll(r.Body); err != nil {
+				t.Fail()
+			}
+
+			if body, err = mockDeleteKey(payload); err != nil {
+				// The cockpit returns a 500 when delete key failed because key ID not found
+				http.Error(w, "Internal Server error - expected when key not found", http.StatusInternalServerError)
+			}
 		case getKeyByNameRoute:
 			// Get query with "name" parameter
 			query := r.URL.Query()
 			if body, err = mockGetKeyByName(query.Get("name")); err != nil {
 				// The cockpit returns a 500 when the key is not found
 				// This might be a bug, but it is the current behavior
+				http.Error(w, "Internal Server error - expected when key not found", http.StatusInternalServerError)
+			}
+		case getKeyByIdRoute:
+			// Get query with "externalId" parameter
+			query := r.URL.Query()
+			if body, err = mockGetKeyById(query.Get("externalId")); err != nil {
+				// The cockpit returns a 500 when the key is not found
 				http.Error(w, "Internal Server error - expected when key not found", http.StatusInternalServerError)
 			}
 		case oauthGetTokenURL:
@@ -245,6 +409,35 @@ func newClientWithStandardMockServer(t *testing.T) (*KMS, *httptest.Server) {
 			if body, err = mockGetToken(username, password); err != nil {
 				http.Error(w, "Internal Server error - User/pwd get token error", http.StatusBadRequest)
 			}
+		case getSignatureCARoute:
+			// Get query with "scepExternalId" parameter
+			query := r.URL.Query()
+			if body, err = mockGetSignatureCA(query.Get("scepExternalId")); err != nil {
+				// The cockpit returns a 500 when the scep App is not found
+				http.Error(w, "Internal Server error - An internal error occurred during your request!", http.StatusInternalServerError)
+			}
+		case csrImportRoute:
+			if payload, err = ioutil.ReadAll(r.Body); err != nil {
+				t.Fail()
+			}
+
+			if body, err = mockCSRImport(payload); err != nil {
+				// The cockpit returns a 500 when the CSR already exists or the PEM format is invalid
+				// The message is different, but not replicated here.
+				// - Existing CSR:
+				// 	{"result":null,"targetUrl":null,"success":false,"error":{"code":0,"message":"C=US,O=scep-client,OU=MDM,CN=commonName16092024 is already exist. Please use another."
+				// - Invalid CSR:
+				// 	{"result":null,"targetUrl":null,"success":false,"error":{"code":0,"message":"Invalid certificate request format. You are trying to import a certificate in the certificate request module."
+				http.Error(w, "Internal Server error - CSR Import Error", http.StatusInternalServerError)
+			}
+		case csrStatusRoute:
+			if payload, err = ioutil.ReadAll(r.Body); err != nil {
+				t.Fail()
+			}
+
+			if body, err = mockCSRStatus(payload); err != nil {
+				http.Error(w, "Internal Server error - Unexpected error", http.StatusInternalServerError)
+			}
 		default:
 			t.Fail()
 		}
@@ -252,13 +445,18 @@ func newClientWithStandardMockServer(t *testing.T) (*KMS, *httptest.Server) {
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(body)
 	}))
-	//defer mockServer.Close()
 
 	endpoints := Endpoints{
-		BaseURL:           mockServer.URL,
-		EncryptRoute:      encryptRoute,
-		DecryptRoute:      decryptRoute,
-		GetKeyByNameRoute: getKeyByNameRoute,
+		BaseURL:             mockServer.URL,
+		EncryptRoute:        encryptRoute,
+		DecryptRoute:        decryptRoute,
+		GetKeyByNameRoute:   getKeyByNameRoute,
+		GetKeyIdRoute:       getKeyByIdRoute,
+		CreateKeyRoute:      createKeyRoute,
+		DeleteKeyRoute:      deleteKeyRoute,
+		CSRImportRoute:      csrImportRoute,
+		CSRStatusRoute:      csrStatusRoute,
+		GetSignatureCARoute: getSignatureCARoute,
 	}
 
 	credentials := credentials.Config{
@@ -302,10 +500,6 @@ func newClientWithStandardMockServer(t *testing.T) (*KMS, *httptest.Server) {
 	client := client.Client{Config: config}
 
 	return &KMS{Endpoints: &endpoints, Client: &client}, mockServer
-}
-
-func TestInputValidation(t *testing.T) {
-
 }
 
 func TestEncryptDecrypt(t *testing.T) {
@@ -502,7 +696,7 @@ func TestEncryptWithTimeout(t *testing.T) {
 	}
 }
 
-// mockGetKeyByName() relies on the predefined key names to return a found or not found key
+// mockGetKeyByName() of newClientWithStandardMockServer() relies on the predefined key names to return a found or not found key
 func TestGetKeyByName(t *testing.T) {
 	testCases := []struct {
 		name    string
@@ -511,13 +705,13 @@ func TestGetKeyByName(t *testing.T) {
 	}{
 		{name: "Existing key",
 			config: map[string]string{
-				"key_name": existingKeyName,
+				"key_name": existingName,
 			},
 			wantErr: false,
 		},
 		{name: "Nonexisting key",
 			config: map[string]string{
-				"key_name": nonexistingKeyName,
+				"key_name": nonexistingName,
 			},
 			wantErr: true, // Key not found expected - The cockpit currently triggers an error 500 when key not found
 		},
@@ -534,20 +728,127 @@ func TestGetKeyByName(t *testing.T) {
 			}
 
 			eOutput, err := kmsClient.GetKeyByName(getKeyInput)
+			validateErrorAndSuccess(t, testCase.wantErr, eOutput.Success, err)
+		})
+	}
+}
 
-			if testCase.wantErr {
-				if err == nil {
-					t.Error("Error expected")
-				}
-			} else {
-				if err != nil {
-					t.Errorf("Unexpected error: " + err.Error())
-				}
+// mockGetKeyById() of newClientWithStandardMockServer() relies on the predefined key Ids to return a found or not found key
+func TestGetKeyById(t *testing.T) {
+	testCases := []struct {
+		name    string
+		config  map[string]string
+		wantErr bool
+	}{
+		{name: "Existing key",
+			config: map[string]string{
+				"key_id": existingGuidId,
+			},
+			wantErr: false,
+		},
+		{name: "Nonexisting key",
+			config: map[string]string{
+				"key_id": nonexistingGuidId,
+			},
+			wantErr: true,
+		},
+	}
 
-				if eOutput.Success != true {
-					t.Error("output.Success == false, but true expected")
-				}
+	kmsClient, mockServer := newClientWithStandardMockServer(t)
+	defer mockServer.Close()
+
+	for _, testCase := range testCases {
+
+		t.Run(testCase.name, func(t *testing.T) {
+			getKeyInput := &GetKeyIdInput{
+				ExternalID: testCase.config["key_id"],
 			}
+
+			eOutput, err := kmsClient.GetKeyId(getKeyInput)
+			validateErrorAndSuccess(t, testCase.wantErr, eOutput.Success, err)
+		})
+	}
+}
+
+// mockCreateKey of newClientWithStandardMockServer() returns true for AES 128, otherwise error 500
+func TestCreateKey(t *testing.T) {
+	testCases := []struct {
+		name    string
+		config  map[string]int
+		wantErr bool
+	}{
+		{name: "Correct key",
+			config: map[string]int{
+				"key_size": 128,
+			},
+			wantErr: false,
+		},
+		{name: "Wrong key",
+			config: map[string]int{
+				"key_size": 130,
+			},
+			wantErr: true,
+		},
+	}
+
+	kmsClient, mockServer := newClientWithStandardMockServer(t)
+	defer mockServer.Close()
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			eInput := &CreateKeyInput{
+				VaultID:          "1",
+				KeyName:          "dummyKeyName",
+				KeyType:          "AES 128",
+				KeySize:          testCase.config["key_size"],
+				IsEnabled:        true,
+				State:            1, // 0 = preActive, 1=active
+				Id:               "",
+				IsDecrypt:        true,
+				IsEncrypt:        true,
+				IsAuditLogEnable: true,
+				PublishPublicKey: false,
+				Reason:           0,
+			}
+
+			eOutput, err := kmsClient.CreateKey(eInput)
+			validateErrorAndSuccess(t, testCase.wantErr, eOutput.Success, err)
+		})
+	}
+}
+
+// mockDeleteKey of newClientWithStandardMockServer() returns success for existingKeyId, http error 500 otherwise
+func TestDeleteKey(t *testing.T) {
+	testCases := []struct {
+		name    string
+		config  map[string]string
+		wantErr bool
+	}{
+		{name: "Correct key",
+			config: map[string]string{
+				"key_id": existingGuidId,
+			},
+			wantErr: false,
+		},
+		{name: "Wrong key",
+			config: map[string]string{
+				"key_id": nonexistingGuidId,
+			},
+			wantErr: true,
+		},
+	}
+
+	kmsClient, mockServer := newClientWithStandardMockServer(t)
+	defer mockServer.Close()
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			deleteKeyInput := &DeletekeyKeyInput{
+				Id: testCase.config["key_id"],
+			}
+
+			eOutput, err := kmsClient.DeleteKey(deleteKeyInput)
+			validateErrorAndSuccess(t, testCase.wantErr, eOutput.Success, err)
 		})
 	}
 }
@@ -590,5 +891,150 @@ func TestAuthenticateUser(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// mockGetSignatureCA() of newClientWithStandardMockServer() relies on the predefined app Id to return a success or http 500 when not found
+func TestGetSignatureCA(t *testing.T) {
+	testCases := []struct {
+		name    string
+		config  map[string]string
+		wantErr bool
+	}{
+		{name: "Existing App",
+			config: map[string]string{
+				"app_id": existingGuidId,
+			},
+			wantErr: false,
+		},
+		{name: "Nonexisting App",
+			config: map[string]string{
+				"app_id": nonexistingGuidId,
+			},
+			wantErr: true,
+		},
+	}
+
+	kmsClient, mockServer := newClientWithStandardMockServer(t)
+	defer mockServer.Close()
+
+	for _, testCase := range testCases {
+
+		t.Run(testCase.name, func(t *testing.T) {
+			eInput := &GetSignatureCAInput{
+				ScepExternalId: testCase.config["app_id"],
+			}
+
+			eOutput, err := kmsClient.GetSignatureCA(eInput)
+			validateErrorAndSuccess(t, testCase.wantErr, eOutput.Success, err)
+		})
+	}
+}
+
+// mockCSRImport() of newClientWithStandardMockServer() relies on the predefined validPEM and invalidPEM a success or http 500 when not found
+// 500 is returned by Cockpit if the CSR already exists, or if the PEM is invalid: both are simulated with 'invalidPEM'
+func TestCSRImport(t *testing.T) {
+	testCases := []struct {
+		name    string
+		config  map[string]string
+		wantErr bool
+	}{
+		{name: "Valid CSR PEM",
+			config: map[string]string{
+				"csr_pem": validPEM,
+			},
+			wantErr: false,
+		},
+		{name: "Invalid CSR PEM",
+			config: map[string]string{
+				"csr_pem": invalidPEM,
+			},
+			wantErr: true,
+		},
+	}
+
+	kmsClient, mockServer := newClientWithStandardMockServer(t)
+	defer mockServer.Close()
+
+	for _, testCase := range testCases {
+
+		t.Run(testCase.name, func(t *testing.T) {
+			// Note: Context can contain a "TransactionID" that is optional
+			// But for the tests, the Context values are currently not tested
+			eInput := &CSRImportInput{
+				CSR: testCase.config["csr_pem"],
+				Context: Context{
+					AppID: "dummyAppID",
+				},
+			}
+
+			eOutput, err := kmsClient.CSRImport(eInput)
+
+			validateErrorAndSuccess(t, testCase.wantErr, eOutput.Success, err)
+		})
+	}
+}
+
+// The Cockpit do not retun a 500, if not found, but Success:true and a different Status.
+// The mock returns Status "Pending" if found, "NotFound" otherwise
+func TestCSRStatus(t *testing.T) {
+	testCases := []struct {
+		name    string
+		config  map[string]string
+		wantErr bool
+	}{
+		{name: "Existing CSR",
+			config: map[string]string{
+				"csr_cn":          existingName,
+				"expected_status": "Pending",
+			},
+			wantErr: false,
+		},
+		{name: "Invalid CSR",
+			config: map[string]string{
+				"csr_cn":          nonexistingName,
+				"expected_status": "NotFound",
+			},
+			wantErr: false,
+		},
+	}
+
+	kmsClient, mockServer := newClientWithStandardMockServer(t)
+	defer mockServer.Close()
+
+	for _, testCase := range testCases {
+
+		t.Run(testCase.name, func(t *testing.T) {
+			// Note: "TransactionID" that is optional
+			eInputStatus := &CSRStatusInput{
+				CommonName: testCase.config["csr_cn"],
+			}
+
+			eOutput, err := kmsClient.CSRStatus(eInputStatus)
+
+			// In both cases, there should be no error and success = true
+			validateErrorAndSuccess(t, testCase.wantErr, eOutput.Success, err)
+			// For the existing csr status will be "Pending", but "NotFound" for the nonexistingName
+			if eOutput.Result.Status != testCase.config["expected_status"] {
+				t.Errorf("Expected status '%v', but received '%v'", testCase.config["expected_status"], eOutput.Result.Status)
+			}
+		})
+	}
+}
+
+// A test validation where the expected result of the test is either an error, or a success=true
+func validateErrorAndSuccess(t *testing.T, wantErr bool, success bool, err error) {
+	if wantErr {
+		if err == nil {
+			t.Error("Error expected")
+		}
+	} else {
+		if err != nil {
+			t.Errorf("Unexpected error: %v", err.Error())
+		}
+
+		if success != true {
+			t.Error("output.Success == false, but true expected")
+		}
 	}
 }
