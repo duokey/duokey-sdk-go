@@ -70,9 +70,13 @@ Optional environment variables - default values are used if not set:
 |DUOKEY_ENCRYPT_ROUTE | The DuoKey API route to be used to make an encryption request |
 |DUOKEY_DECRYPT_ROUTE | The DuoKey API route to be used to make a decryption request |
 |DUOKEY_IMPORT_ROUTE | The DuoKey API route to be used to import a key |
+|DUOKEY_GETKEYID_ROUTE | The DuoKey API route to be used to get a key by its external id |
+|DUOKEY_GETKEYBYNAME_ROUTE | The DuoKey API route to be used to get a key by its name |
 |DUOKEY_CSRIMPORT_ROUTE | The DuoKey API route to be used to import a CSR |
 |DUOKEY_CSRSTATUS_ROUTE | The DuoKey API route to be used to import get the CSR Status and get the signed certificate |
 |DUOKEY_GETSIGNATURECA_ROUTE | The DuoKey API route to be used to get the CA signature |
+|DUOKEY_CREATEOREDITOBJECT_ROUTE | The DuoKey API route to be used to create or edit an object (pkcs11) |
+|DUOKEY_GETOBJECTBYNAME_ROUTE | The DuoKey API route to be used to get an object by its name (pkcs11) |
 
 Run the example:
 

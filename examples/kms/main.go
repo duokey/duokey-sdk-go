@@ -294,7 +294,7 @@ func main() {
 
 	// To run testKeysOperations(), adapt the parameters
 	// For Fabian: launch.json, use the parameters "App to try the sdk with the cockpit demo (not test) - works in December 2024"
-	testCreateKeysOperations(vaultClient)
+	//testCreateKeysOperations(vaultClient)
 	//testKeysOperations(vaultClient)
 	// To run testCSROperations(), adapt the parameters
 	// For Fabian: launch.json, use the parameters "App for SCEP (on cockpit-api-test) - from Pargat - August 2024"
@@ -303,6 +303,7 @@ func main() {
 	//	But here testing the functionality with the same credentials
 	//testAuthenticateUser(vaultClient, credentials.UserName, credentials.Password)
 	//testGetSignatureCA(vaultClient)
+	testCreateObjectsOperations(vaultClient)
 }
 
 // Testing the authentication of a user with a user/pwd
@@ -685,4 +686,57 @@ func testCreateKeysOperations(vaultClient *kms.KMS) {
 			fmt.Println("DeleteKey result: Strange behavior as no error was raised but Success=False")
 		}
 	}
+}
+
+func testCreateObjectsOperations(vaultClient *kms.KMS) {
+	createObject := false
+	objectName := "fab-object-test-software-vault"
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Millisecond*50000)) // Fab tmp: increase from 10000 to 50000 to have time debuging
+	defer cancel()
+
+	if createObject {
+		eInput := &kms.CreateOrEditObjectInput{
+			VaultID:    vaultID,
+			ObjectName: objectName,
+			ObjectData: "some data for that object",
+		}
+		eInput.Context = make(map[string]string)
+		eInput.Context["appid"] = appID // appid Added As It Is Mandatory
+		eInput.Context["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn"] = upn
+
+		// Start timer
+		defer timeTrack(time.Now())
+
+		fmt.Println("CreateObject request")
+		eOutput, err := vaultClient.CreateOrEditObjectWithContext(ctx, eInput)
+		if err != nil {
+			fmt.Println("CreateObject request failed:", err.Error())
+			os.Exit(1)
+		}
+
+		if eOutput.Success {
+			fmt.Println("CreateObject result: Success=True")
+		} else {
+			fmt.Println("CreateObject result: Strange behavior as no error was raised but Success=False")
+		}
+
+		fmt.Printf("CreateObject result.ExternalId : %v\n", eOutput.ExternalId)
+	}
+
+	fmt.Println("GetObjectByName request")
+	getObjectInput := &kms.GetObjectByNameInput{
+		Name: objectName,
+	}
+
+	getObjectOutput, err := vaultClient.GetObjecByNameWithContext(ctx, getObjectInput)
+	if err != nil {
+		fmt.Println("GetKeyByName request failed:", err.Error())
+		os.Exit(1)
+	}
+
+	fmt.Println("objectOutput.Result.Object.Name : ", getObjectOutput.Result.Object.Name)
+	fmt.Println("objectOutput.Result.Object.ExternalId : ", getObjectOutput.Result.Object.ExternalId)
+	fmt.Println("objectOutput.Result.Object.Id : ", getObjectOutput.Result.Object.Id)
+	fmt.Println("objectOutput.Result.Object.ObjectData : ", getObjectOutput.Result.Object.ObjectData)
 }

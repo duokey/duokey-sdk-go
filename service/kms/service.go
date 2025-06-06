@@ -15,17 +15,19 @@ type KMS struct {
 // Endpoints of the crypto services (all routes of the DuoKey REST API
 // are customizable)
 type Endpoints struct {
-	BaseURL             string `mapstructure:"base-url"`
-	CreateKeyRoute      string `mapstructure:"createkey-route"`
-	DeleteKeyRoute      string `mapstructure:"deletekey-route"`
-	EncryptRoute        string `mapstructure:"encrypt-route"`
-	DecryptRoute        string `mapstructure:"decrypt-route"`
-	ImportRoute         string `mapstructure:"import-route"`
-	GetKeyIdRoute       string `mapstructure:"getkeyid-route"`
-	GetKeyByNameRoute   string `mapstructure:"getkeybyname-route"`
-	CSRImportRoute      string `mapstructure:"csrimport-route"`
-	CSRStatusRoute      string `mapstructure:"csrstatus-route"`
-	GetSignatureCARoute string `mapstructure:"getsignatureca-route"`
+	BaseURL                 string `mapstructure:"base-url"`
+	CreateKeyRoute          string `mapstructure:"createkey-route"`
+	DeleteKeyRoute          string `mapstructure:"deletekey-route"`
+	EncryptRoute            string `mapstructure:"encrypt-route"`
+	DecryptRoute            string `mapstructure:"decrypt-route"`
+	ImportRoute             string `mapstructure:"import-route"`
+	GetKeyIdRoute           string `mapstructure:"getkeyid-route"`
+	GetKeyByNameRoute       string `mapstructure:"getkeybyname-route"`
+	CSRImportRoute          string `mapstructure:"csrimport-route"`
+	CSRStatusRoute          string `mapstructure:"csrstatus-route"`
+	GetSignatureCARoute     string `mapstructure:"getsignatureca-route"`
+	CreateOrEditObjectRoute string `mapstructure:"createoreditobject-route"`
+	GetObjectByNameRoute    string `mapstructure:"getobjectbyname-route"`
 }
 
 // New checks the credentials and returns a KMS client with the default logger.
@@ -83,6 +85,12 @@ func NewClientWithLogger(credentials credentials.Config, endpoints Endpoints, lo
 	}
 	if endpoints.GetSignatureCARoute == "" {
 		endpoints.GetSignatureCARoute = "/api/services/app/SCEP/GetSignatureCAForScepServer"
+	}
+	if endpoints.CreateOrEditObjectRoute == "" {
+		endpoints.CreateOrEditObjectRoute = "/api/services/app/pkcs11/CreateOrEditObject"
+	}
+	if endpoints.GetObjectByNameRoute == "" {
+		endpoints.GetObjectByNameRoute = "/api/services/app/pkcs11/GetObjectByName"
 	}
 
 	return &KMS{Client: client, Endpoints: &endpoints}, nil

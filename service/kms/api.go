@@ -758,3 +758,137 @@ func (k *KMS) getSignatureCARequest(input *GetSignatureCAInput) (req *request.Re
 
 	return
 }
+
+// Create Key
+const opCreateOrEditObject = "CreateOrEditObject"
+
+// TODO add Id or ExernalId for edition
+// Description: currently hard-coded by the cockpit
+type CreateOrEditObjectInput struct {
+	VaultID    string            `json:"vaultid" validate:"nonzero"`
+	Context    map[string]string `json:"context,omitempty"`
+	ObjectName string            `json:"name,omitempty"`
+	ObjectData string            `json:"objectData,omitempty"`
+}
+
+type CreateObjectOutput struct {
+	Success    bool   `json:"success,omitempty"`
+	ExternalId string `json:"result"`
+}
+
+// CreateKey API operation for DuoKey
+func (k *KMS) CreateOrEditObject(input *CreateOrEditObjectInput) (*CreateObjectOutput, error) {
+
+	req, out := k.createOrEditObjectRequest(input)
+
+	return out, req.Send()
+}
+
+// CreateKeyWithContext is the same operation as CreateKey. It is however possible
+// to pass a non-nil context.
+func (k *KMS) CreateOrEditObjectWithContext(ctx context.Context, input *CreateOrEditObjectInput) (*CreateObjectOutput, error) {
+
+	req, out := k.createOrEditObjectRequest(input)
+	req.SetContext(ctx)
+
+	return out, req.Send()
+}
+
+func (k *KMS) createOrEditObjectRequest(input *CreateOrEditObjectInput) (req *request.Request, output *CreateObjectOutput) {
+
+	op := &request.Operation{
+		Name:       opCreateOrEditObject,
+		HTTPMethod: http.MethodPost,
+		BaseURL:    k.Endpoints.BaseURL,
+		Route:      k.Endpoints.CreateOrEditObjectRoute,
+	}
+
+	if input == nil {
+		input = &CreateOrEditObjectInput{}
+	}
+
+	// Create an empty context if needed
+	if input.Context == nil {
+		input.Context = make(map[string]string)
+	}
+
+	// Merge the input context and the mandatory context
+	for key, value := range k.Client.GetMandatoryContext() {
+		input.Context[key] = value
+	}
+
+	output = &CreateObjectOutput{}
+	req = k.NewRequest(op, input, output)
+
+	return
+}
+
+const opGetObjectByName = "opGetObjectByName"
+
+// GetKeyIdInput retrives key information.
+type GetObjectByNameInput struct {
+	Name string `schema:"name" url:"name"`
+}
+
+type ObjectData struct {
+	Name       string `json:"name,omitempty"`
+	VaultID    string `json:"vaultid" validate:"nonzero"`
+	ObjectData string `json:"objectData,omitempty"`
+	ExternalId string `json:"externalId"`
+	Id         string `json:"id"`
+}
+
+type GetObjectOutput struct {
+	Success bool `json:"success"`
+	Result  struct {
+		Object    ObjectData `json:"object" validate:"nonzero"`
+		VaultName string     `json:"vaultName"`
+		VaultType uint32     `json:"vaultType"`
+	} `json:"result" validate:"nonzero"`
+	TargetURL           *string `json:"targetUrl"`
+	Error               *string `json:"error"`
+	UnauthorizedRequest bool    `json:"unAuthorizedRequest"`
+	ABP                 bool    `json:"__abp"`
+}
+
+// Get Key by Name
+func (k *KMS) GetObjecByName(input *GetObjectByNameInput) (*GetObjectOutput, error) {
+
+	req, out := k.getObjectByNameRequest(input)
+
+	return out, req.Send()
+}
+
+// GetKeyByNameWithContext is the same operation as GetKeyByName. It is however possible
+// to pass a non-nil context.
+func (k *KMS) GetObjecByNameWithContext(ctx context.Context, input *GetObjectByNameInput) (*GetObjectOutput, error) {
+
+	req, out := k.getObjectByNameRequest(input)
+	req.SetContext(ctx)
+
+	return out, req.Send()
+}
+
+func (k *KMS) getObjectByNameRequest(input *GetObjectByNameInput) (req *request.Request, output *GetObjectOutput) {
+
+	// This is used to get query parameter format from struct
+	// queryParams.Encode() will convert it into string
+	queryParams, _ := query.Values(input)
+
+	op := &request.Operation{
+		Name:        opGetObjectByName,
+		HTTPMethod:  http.MethodGet,
+		BaseURL:     k.Endpoints.BaseURL,
+		Route:       k.Endpoints.GetObjectByNameRoute,
+		QueryParams: queryParams.Encode(),
+	}
+
+	if input == nil {
+		input = &GetObjectByNameInput{}
+	}
+
+	output = &GetObjectOutput{}
+	req = k.NewRequest(op, input, output)
+
+	return
+}
