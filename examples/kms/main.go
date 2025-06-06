@@ -294,15 +294,15 @@ func main() {
 
 	// To run testKeysOperations(), adapt the parameters
 	// For Fabian: launch.json, use the parameters "App to try the sdk with the cockpit demo (not test) - works in December 2024"
-	// testCreateKeysOperations(vaultClient)
-	// testKeysOperations(vaultClient)
+	testCreateKeysOperations(vaultClient)
+	//testKeysOperations(vaultClient)
 	// To run testCSROperations(), adapt the parameters
 	// For Fabian: launch.json, use the parameters "App for SCEP (on cockpit-api-test) - from Pargat - August 2024"
-	// testCSROperations(vaultClient)
+	//testCSROperations(vaultClient)
 	// testAuthenticateUser(): should be done with other credentials than the ones used by this duokey-sdk-go
 	//	But here testing the functionality with the same credentials
-	testAuthenticateUser(vaultClient, credentials.UserName, credentials.Password)
-	// testGetSignatureCA(vaultClient)
+	//testAuthenticateUser(vaultClient, credentials.UserName, credentials.Password)
+	//testGetSignatureCA(vaultClient)
 }
 
 // Testing the authentication of a user with a user/pwd
@@ -373,7 +373,7 @@ AKLoVJ3cuU9Hghi76qE=`
 	// The CommonName and TransactionID should match (same as the pair used for the /ImportCertificateCSR call)
 	fmt.Println("CSR Status request")
 	eInputStatus := &kms.CSRStatusInput{
-		CommonName:    "commonName16092024", // "commonName13092024", // "commonName13092024_2", "scepclient",
+		CommonName:    "commonName16092024", // "commonName16092024", "commonName13092024", "commonName13092024_2", "scepclient",
 		TransactionID: transactionID,
 	}
 
@@ -585,7 +585,7 @@ func testKeysOperations(vaultClient *kms.KMS) {
 func testCreateKeysOperations(vaultClient *kms.KMS) {
 	createKey := true
 	deleteKey := false
-	keyName := "fab-AES-128-test-software-vault"
+	keyName := "fab-AES-128-test-software-vault-2"
 	//keyName := "fab-RSA-2048-test-1"
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Millisecond*50000)) // Fab tmp: increase from 10000 to 50000 to have time debuging
@@ -645,10 +645,13 @@ func testCreateKeysOperations(vaultClient *kms.KMS) {
 		} else {
 			fmt.Println("CreateKey result: Strange behavior as no error was raised but Success=False")
 		}
+
+		fmt.Printf("Create Key result.ExternalId : %v\n", eOutput.ExternalId)
 	}
 
 	fmt.Println("GetKeyByName request")
 	// GetKeyByName to get the key ID for further key deletion
+	// Note: that keyId is different from the externalKeyId returned by CreateKey
 	getKeyInput := &kms.GetKeyByNameInput{
 		Name: keyName,
 	}

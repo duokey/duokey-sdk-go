@@ -112,13 +112,18 @@ type CreateKeyInput struct {
 	Reason           int               `json:"reason,omitempty"`
 }
 
+type CreateKeyOutput struct {
+	Success    bool   `json:"success,omitempty"`
+	ExternalId string `json:"result"`
+}
+
 // SuccessOutput can be used as the output of different routes that return a Success boolean
 type SuccessOutput struct {
 	Success bool `json:"success,omitempty"`
 }
 
 // CreateKey API operation for DuoKey
-func (k *KMS) CreateKey(input *CreateKeyInput) (*SuccessOutput, error) {
+func (k *KMS) CreateKey(input *CreateKeyInput) (*CreateKeyOutput, error) {
 
 	req, out := k.createKeyRequest(input)
 
@@ -127,7 +132,7 @@ func (k *KMS) CreateKey(input *CreateKeyInput) (*SuccessOutput, error) {
 
 // CreateKeyWithContext is the same operation as CreateKey. It is however possible
 // to pass a non-nil context.
-func (k *KMS) CreateKeyWithContext(ctx context.Context, input *CreateKeyInput) (*SuccessOutput, error) {
+func (k *KMS) CreateKeyWithContext(ctx context.Context, input *CreateKeyInput) (*CreateKeyOutput, error) {
 
 	req, out := k.createKeyRequest(input)
 	req.SetContext(ctx)
@@ -135,7 +140,7 @@ func (k *KMS) CreateKeyWithContext(ctx context.Context, input *CreateKeyInput) (
 	return out, req.Send()
 }
 
-func (k *KMS) createKeyRequest(input *CreateKeyInput) (req *request.Request, output *SuccessOutput) {
+func (k *KMS) createKeyRequest(input *CreateKeyInput) (req *request.Request, output *CreateKeyOutput) {
 
 	op := &request.Operation{
 		Name:       opCreateKey,
@@ -158,7 +163,7 @@ func (k *KMS) createKeyRequest(input *CreateKeyInput) (req *request.Request, out
 		input.Context[key] = value
 	}
 
-	output = &SuccessOutput{}
+	output = &CreateKeyOutput{}
 	req = k.NewRequest(op, input, output)
 
 	return
