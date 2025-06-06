@@ -739,7 +739,6 @@ func (k *KMS) GetSignatureCAWithContext(ctx context.Context, input *GetSignature
 }
 
 func (k *KMS) getSignatureCARequest(input *GetSignatureCAInput) (req *request.Request, output *GetSignatureCAOutput) {
-	// commonName is passed as query parameter
 	queryParams, _ := query.Values(input)
 
 	op := &request.Operation{
