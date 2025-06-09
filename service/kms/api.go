@@ -832,7 +832,7 @@ type GetObjectByNameInput struct {
 
 type ObjectData struct {
 	Name       string `json:"name,omitempty"`
-	VaultID    string `json:"vaultid" validate:"nonzero"`
+	VaultID    string `json:"vaultid"`
 	ObjectData string `json:"objectData,omitempty"`
 	ExternalId string `json:"externalId"`
 	Id         string `json:"id"`
