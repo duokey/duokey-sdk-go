@@ -825,7 +825,7 @@ func (k *KMS) createOrEditObjectRequest(input *CreateOrEditObjectInput) (req *re
 
 const opGetObjectByName = "opGetObjectByName"
 
-// GetKeyIdInput retrives key information.
+// GetObjectByNameInput retrives key information.
 type GetObjectByNameInput struct {
 	Name string `schema:"name" url:"name"`
 }
@@ -851,7 +851,7 @@ type GetObjectOutput struct {
 	ABP                 bool    `json:"__abp"`
 }
 
-// Get Key by Name
+// Get Object by Name
 func (k *KMS) GetObjecByName(input *GetObjectByNameInput) (*GetObjectOutput, error) {
 
 	req, out := k.getObjectByNameRequest(input)
@@ -859,7 +859,7 @@ func (k *KMS) GetObjecByName(input *GetObjectByNameInput) (*GetObjectOutput, err
 	return out, req.Send()
 }
 
-// GetKeyByNameWithContext is the same operation as GetKeyByName. It is however possible
+// GetObjecByNameWithContext is the same operation as GetObjecByNameWithContext. It is however possible
 // to pass a non-nil context.
 func (k *KMS) GetObjecByNameWithContext(ctx context.Context, input *GetObjectByNameInput) (*GetObjectOutput, error) {
 
@@ -885,6 +885,53 @@ func (k *KMS) getObjectByNameRequest(input *GetObjectByNameInput) (req *request.
 
 	if input == nil {
 		input = &GetObjectByNameInput{}
+	}
+
+	output = &GetObjectOutput{}
+	req = k.NewRequest(op, input, output)
+
+	return
+}
+
+// GetObjectByIdInput retrieves object information.
+type GetObjectByIdInput struct {
+	ExternalID string `schema:"externalId" url:"externalId"`
+}
+
+// Get Object by Name
+func (k *KMS) GetObjecById(input *GetObjectByIdInput) (*GetObjectOutput, error) {
+
+	req, out := k.getObjectByIdRequest(input)
+
+	return out, req.Send()
+}
+
+// GetObjecByIdWithContext is the same operation as GetObjecById. It is however possible
+// to pass a non-nil context.
+func (k *KMS) GetObjecByIdWithContext(ctx context.Context, input *GetObjectByIdInput) (*GetObjectOutput, error) {
+
+	req, out := k.getObjectByIdRequest(input)
+	req.SetContext(ctx)
+
+	return out, req.Send()
+}
+
+func (k *KMS) getObjectByIdRequest(input *GetObjectByIdInput) (req *request.Request, output *GetObjectOutput) {
+
+	// This is used to get query parameter format from struct
+	// queryParams.Encode() will convert it into string
+	queryParams, _ := query.Values(input)
+
+	op := &request.Operation{
+		Name:        opGetObjectByName,
+		HTTPMethod:  http.MethodGet,
+		BaseURL:     k.Endpoints.BaseURL,
+		Route:       k.Endpoints.GetObjectByIdRoute,
+		QueryParams: queryParams.Encode(),
+	}
+
+	if input == nil {
+		input = &GetObjectByIdInput{}
 	}
 
 	output = &GetObjectOutput{}

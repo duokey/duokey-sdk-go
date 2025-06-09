@@ -708,7 +708,7 @@ func testCreateObjectsOperations(vaultClient *kms.KMS) {
 		// Start timer
 		defer timeTrack(time.Now())
 
-		fmt.Println("CreateObject request")
+		fmt.Println("*** CreateObject request ***")
 		eOutput, err := vaultClient.CreateOrEditObjectWithContext(ctx, eInput)
 		if err != nil {
 			fmt.Println("CreateObject request failed:", err.Error())
@@ -724,7 +724,7 @@ func testCreateObjectsOperations(vaultClient *kms.KMS) {
 		fmt.Printf("CreateObject result.ExternalId : %v\n", eOutput.ExternalId)
 	}
 
-	fmt.Println("GetObjectByName request")
+	fmt.Println("*** Get Object by Name request ***")
 	getObjectInput := &kms.GetObjectByNameInput{
 		Name: objectName,
 	}
@@ -739,4 +739,17 @@ func testCreateObjectsOperations(vaultClient *kms.KMS) {
 	fmt.Println("objectOutput.Result.Object.ExternalId : ", getObjectOutput.Result.Object.ExternalId)
 	fmt.Println("objectOutput.Result.Object.Id : ", getObjectOutput.Result.Object.Id)
 	fmt.Println("objectOutput.Result.Object.ObjectData : ", getObjectOutput.Result.Object.ObjectData)
+
+	// Get Object by Id
+	fmt.Println("*** Get Object by ID request ***")
+	getObjectByIdInput := &kms.GetObjectByIdInput{
+		ExternalID: getObjectOutput.Result.Object.ExternalId,
+	}
+
+	objectByIdOutput, err := vaultClient.GetObjecByIdWithContext(ctx, getObjectByIdInput)
+	if err != nil {
+		fmt.Println("GetObjectById request failed:", err.Error())
+	} else {
+		fmt.Println("objectByIdOutput.Result.Object.Name :: ", objectByIdOutput.Result.Object.Name)
+	}
 }

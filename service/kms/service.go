@@ -28,6 +28,7 @@ type Endpoints struct {
 	GetSignatureCARoute     string `mapstructure:"getsignatureca-route"`
 	CreateOrEditObjectRoute string `mapstructure:"createoreditobject-route"`
 	GetObjectByNameRoute    string `mapstructure:"getobjectbyname-route"`
+	GetObjectByIdRoute      string `mapstructure:"getobjectbyid-route"`
 }
 
 // New checks the credentials and returns a KMS client with the default logger.
@@ -92,6 +93,8 @@ func NewClientWithLogger(credentials credentials.Config, endpoints Endpoints, lo
 	if endpoints.GetObjectByNameRoute == "" {
 		endpoints.GetObjectByNameRoute = "/api/services/app/pkcs11/GetObjectByName"
 	}
-
+	if endpoints.GetObjectByIdRoute == "" {
+		endpoints.GetObjectByIdRoute = "/api/services/app/pkcs11/GetObjectById"
+	}
 	return &KMS{Client: client, Endpoints: &endpoints}, nil
 }
