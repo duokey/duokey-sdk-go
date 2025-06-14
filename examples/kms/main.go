@@ -303,7 +303,8 @@ func main() {
 	//	But here testing the functionality with the same credentials
 	//testAuthenticateUser(vaultClient, credentials.UserName, credentials.Password)
 	//testGetSignatureCA(vaultClient)
-	testCreateObjectsOperations(vaultClient)
+	//testCreateObjectsOperations(vaultClient)
+	testGetObjectAndGetKeyByName(vaultClient)
 }
 
 // Testing the authentication of a user with a user/pwd
@@ -451,19 +452,22 @@ func testKeysOperations(vaultClient *kms.KMS) {
 	//		and it depends on the Cockpit Vault (vaultID from the input parameters))
 	//		At the time of writing this example, March 2025, only the MPC (Sepior) Cockpit vault does handle AES-CBC
 	// ** RSA-OAEP-256 **
-	// algorithm := "RSA-OAEP-256"
-	// iv := ""
-	// aad := ""
+	algorithm := "RSA-OAEP-256"
+	iv := ""
+	aad := ""
 	// message := "TG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQ="
-	// payload := []byte(message)
+	message := "ceciEstMonTextSecret"
+	payload := []byte(message)
 	//
 	// ** AES-GCM **
-	// 		iv for AES-GCM should be 12 bytes (recommandation for optimal security and performance)
-	algorithm := "AES-GCM"
-	iv := "YWJjZGVmZ2hpamts"
-	aad := "bGFiZWw="
-	message := "This is my original message" // "TG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQ="
-	payload := []byte(message)
+	// Note: AES-GCM seems to fail with Securosy, seems that received Tag is empty
+	// 	to be further investigated if needed
+	// 	// iv for AES-GCM should be 12 bytes (recommandation for optimal security and performance)
+	// algorithm := "AES-GCM"
+	// iv := "YWJjZGVmZ2hpamts"
+	// aad := "bGFiZWw="
+	// message := "This is my original message" // "TG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQ="
+	// payload := []byte(message)
 	//
 	// ** AES-CBC **
 	// 		payload size must be a multiple of 16 (padding done by the client)
@@ -512,6 +516,7 @@ func testKeysOperations(vaultClient *kms.KMS) {
 	}
 
 	fmt.Println("Encrypted payload: " + string(eOutput.Result.EncryptedPayload))
+	fmt.Println("Encrypted Result.Tag (needed for AES-GCM): " + string(eOutput.Result.Tag))
 
 	// Decryption
 	dInput := &kms.DecryptInput{
@@ -586,7 +591,8 @@ func testKeysOperations(vaultClient *kms.KMS) {
 func testCreateKeysOperations(vaultClient *kms.KMS) {
 	createKey := true
 	deleteKey := false
-	keyName := "fab-AES-128-test-software-vault-2"
+	// keyName := "fab-object-test-software-vault" // "fab-AES-128-test-software-vault-2"
+	keyName := "fab-RSA-20248-test-software-vault"
 	//keyName := "fab-RSA-2048-test-1"
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Millisecond*50000)) // Fab tmp: increase from 10000 to 50000 to have time debuging
@@ -594,38 +600,38 @@ func testCreateKeysOperations(vaultClient *kms.KMS) {
 
 	if createKey {
 		// Creating a AES-128 key
-		eInput := &kms.CreateKeyInput{
-			VaultID:          vaultID,
-			KeyName:          keyName,
-			KeyType:          "AES 128",
-			KeySize:          128,
-			Description:      "Description test from duokey-sdk-go",
-			Comment:          "A comment test from duokey-sdk-go",
-			IsEnabled:        true,
-			State:            1, // 0 = preActive, 1=active
-			Id:               "",
-			IsDecrypt:        true,
-			IsEncrypt:        true,
-			IsAuditLogEnable: true,
-			PublishPublicKey: false,
-			Reason:           0,
-		}
-
-		// Creating a RSA-20248 key
 		// eInput := &kms.CreateKeyInput{
 		// 	VaultID:          vaultID,
 		// 	KeyName:          keyName,
-		// 	KeyType:          "RSA 2048",
-		// 	KeySize:          2048,
+		// 	KeyType:          "AES 128",
+		// 	KeySize:          128,
+		// 	Description:      "Description test from duokey-sdk-go",
+		// 	Comment:          "A comment test from duokey-sdk-go",
 		// 	IsEnabled:        true,
 		// 	State:            1, // 0 = preActive, 1=active
 		// 	Id:               "",
 		// 	IsDecrypt:        true,
-		// 	IsEncrypt:        false,
+		// 	IsEncrypt:        true,
 		// 	IsAuditLogEnable: true,
 		// 	PublishPublicKey: false,
 		// 	Reason:           0,
 		// }
+
+		// Creating a RSA-20248 key
+		eInput := &kms.CreateKeyInput{
+			VaultID:          vaultID,
+			KeyName:          keyName,
+			KeyType:          "RSA 2048",
+			KeySize:          2048,
+			IsEnabled:        true,
+			State:            1, // 0 = preActive, 1=active
+			Id:               "",
+			IsDecrypt:        true,
+			IsEncrypt:        false,
+			IsAuditLogEnable: true,
+			PublishPublicKey: false,
+			Reason:           0,
+		}
 
 		eInput.Context = make(map[string]string)
 		eInput.Context["appid"] = appID // appid Added As It Is Mandatory
@@ -690,9 +696,12 @@ func testCreateKeysOperations(vaultClient *kms.KMS) {
 
 func testCreateObjectsOperations(vaultClient *kms.KMS) {
 	createObject := false
-	objectName := "fab-object-test-software-vault"
+	//objectName := "fab-object-test-software-vault"
+	//objectName := "fab-object-test-software-vault-auditLogDidabled"
+	//objectName := "fab-object-test-primus-vault-keytype-dataobject"
+	objectName := "fab-object-test-software-vault-keytype-dataobject-2"
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Millisecond*50000)) // Fab tmp: increase from 10000 to 50000 to have time debuging
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Millisecond*100000)) // Fab tmp: increase from 10000 to 50000 to have time debuging
 	defer cancel()
 
 	if createObject {
@@ -750,6 +759,94 @@ func testCreateObjectsOperations(vaultClient *kms.KMS) {
 	if err != nil {
 		fmt.Println("GetObjectById request failed:", err.Error())
 	} else {
-		fmt.Println("objectByIdOutput.Result.Object.Name :: ", objectByIdOutput.Result.Object.Name)
+		fmt.Println("objectByIdOutput.Result.Object.Name : ", objectByIdOutput.Result.Object.Name)
+		fmt.Println("objectByIdOutput.Result.Object.ObjectData : ", objectByIdOutput.Result.Object.ObjectData)
 	}
+}
+
+// A function to debug the Cockpit behavior
+// As a GetKeyByNameWithContext after a GetObjecByNameWithContext does have some latency when writing the activity log
+func testGetObjectAndGetKeyByName(vaultClient *kms.KMS) {
+	objectName := "fab-object-test-software-vault"
+	//objectName := "fab-object-test-software-vault-auditLogDidabled"
+	//objectExternalId := "87188509-a500-4f53-af88-814ab1b8e3fe"
+
+	timeOutValue := time.Duration(time.Millisecond * 10000)
+
+	ctx, cancel := context.WithTimeout(context.Background(), timeOutValue)
+	defer cancel()
+
+	fmt.Println("*** Get Object by Name request ***")
+	getObjectInput := &kms.GetObjectByNameInput{
+		Name: objectName,
+	}
+
+	// Note: getObjectByName returns an error 500 if no object found
+	// -> go on with the search
+	getObjectOutput, err := vaultClient.GetObjecByNameWithContext(ctx, getObjectInput)
+	if err != nil {
+		fmt.Println("GetKeyByName request failed:", err.Error())
+		// os.Exit(1)
+	} else {
+		fmt.Println("objectOutput.Result.Object.Name : ", getObjectOutput.Result.Object.Name)
+		fmt.Println("objectOutput.Result.Object.ExternalId : ", getObjectOutput.Result.Object.ExternalId)
+		fmt.Println("objectOutput.Result.Object.Id : ", getObjectOutput.Result.Object.Id)
+		fmt.Println("objectOutput.Result.Object.ObjectData : ", getObjectOutput.Result.Object.ObjectData)
+	}
+	// fmt.Println("*** Get Object by Id request ***")
+	// getObjectInput := &kms.GetObjectByIdInput{
+	// 	ExternalID: objectExternalId,
+	// }
+
+	// getObjectOutput, err := vaultClient.GetObjecByIdWithContext(ctx, getObjectInput)
+	// if err != nil {
+	// 	fmt.Println("GetKeyByName request failed:", err.Error())
+	// 	os.Exit(1)
+	// }
+
+	// fmt.Println("objectOutput.Result.Object.Name : ", getObjectOutput.Result.Object.Name)
+	// fmt.Println("objectOutput.Result.Object.ExternalId : ", getObjectOutput.Result.Object.ExternalId)
+	// fmt.Println("objectOutput.Result.Object.Id : ", getObjectOutput.Result.Object.Id)
+	// fmt.Println("objectOutput.Result.Object.ObjectData : ", getObjectOutput.Result.Object.ObjectData)
+
+	fmt.Println("*** FIRST GetKeyByName request ***")
+	// GetKeyByName to get the key ID for further key deletion
+	// Note: that keyId is different from the externalKeyId returned by CreateKey
+	getKeyInput := &kms.GetKeyByNameInput{
+		Name: objectName,
+	}
+
+	ctx2, cancel := context.WithTimeout(context.Background(), timeOutValue)
+	defer cancel()
+
+	// Note: getObjectByName returns an error 500 if no object found
+	// -> go on with the search
+	getKeyOutput, err := vaultClient.GetKeyByNameWithContext(ctx2, getKeyInput)
+	if err != nil {
+		fmt.Println("GetKeyByName request failed:", err.Error())
+		// os.Exit(1)
+	} else {
+		fmt.Println("keyOutput.Result.Key.Name : ", getKeyOutput.Result.Key.Name)
+		fmt.Println("keyOutput.Result.Key.ExternalId : ", getKeyOutput.Result.Key.ExternalId)
+		fmt.Println("keyOutput.Result.Key.Id : ", getKeyOutput.Result.Key.Id)
+		fmt.Println("keyOutput.Result.Key.Comment : ", getKeyOutput.Result.Key.Comment)
+	}
+
+	// fmt.Println("*** SECOND GetKeyByName request ***")
+	// ctx3, cancel := context.WithTimeout(context.Background(), timeOutValue)
+	// defer cancel()
+
+	// // Note: getObjectByName returns an error 500 if no object found
+	// // -> go on with the search
+	// getKeyOutput, err := vaultClient.GetKeyByNameWithContext(ctx3, getKeyInput)
+	// if err != nil {
+	// 	fmt.Println("GetKeyByName request failed:", err.Error())
+	// 	// os.Exit(1)
+	// } else {
+	// 	fmt.Println("keyOutput.Result.Key.Name : ", getKeyOutput.Result.Key.Name)
+	// 	fmt.Println("keyOutput.Result.Key.ExternalId : ", getKeyOutput.Result.Key.ExternalId)
+	// 	fmt.Println("keyOutput.Result.Key.Id : ", getKeyOutput.Result.Key.Id)
+	// 	fmt.Println("keyOutput.Result.Key.Comment : ", getKeyOutput.Result.Key.Comment)
+	// }
+
 }
