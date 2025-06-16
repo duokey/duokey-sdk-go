@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/duokey/duokey-sdk-go/duokey"
@@ -130,6 +131,39 @@ func (c *Client) NewRequest(operation *request.Operation, params interface{}, da
 
 }
 
+// send a request, and if 401 update the token and send once again
+// To send the request a second time, it must be cloned
+// The result will be stored in the req.Response (also referenced in 'out' variable by the caller)
+func (c *Client) SendRequestWithTokenUpdate(req *request.Request) error {
+	err := req.Send()
+
+	if err == nil {
+		return nil
+	}
+
+	// Check if error 401, currently having to check for that string
+	// that is set in request.go parseHTTPResponse()
+	if strings.Contains(err.Error(), "request failed with status 401:") {
+		c.Config.Logger.Info("SendRequestWithTokenUpdate() 401 - renew Token and clone request to resend")
+		// renew the token and retry
+
+		err = c.renewToken()
+		if err != nil {
+			return err
+		}
+
+		clonedReq, err := req.CloneRequest(&c.Config)
+		if err != nil {
+			return err
+		}
+
+		return clonedReq.Send()
+	} else { // the error is not a token renewal problem, return it
+		return err
+	}
+
+}
+
 // GetMandatoryContext returns a map storing the context required by the DuoKey server for some of the calls (encryptRequest, decryptRequest, etc.)
 func (c *Client) GetMandatoryContext() map[string]string {
 	context := make(map[string]string)
@@ -150,6 +184,7 @@ func (c *Client) GetMandatoryContext() map[string]string {
 //	For machine-to-machine (M2M) communication where microservices access protected APIs, the Client Credentials Grant is the preferred method:
 //	When the Access Token expires, the microservice simply requests a new token using the same client credentials, without the need for a refresh token.
 func (c *Client) checkToken() error {
+	c.Config.Logger.Info("checkToken() - checking the current token")
 	renew := false
 
 	if c.Config.OAuth2Config == nil {
@@ -166,45 +201,53 @@ func (c *Client) checkToken() error {
 	}
 
 	if renew {
-		c.Config.Logger.Info("checkToken() - A new token is requested")
-		// The custom transport adds the tenant ID to the header
-		transport := &duoKeyTransport{
-			TenantID:       c.Config.Credentials.TenantID,
-			HeaderTenantID: c.Config.Credentials.HeaderTenantID,
-			Logger:         c.Config.Logger,
-		}
-
-		httpClient := &http.Client{Transport: transport, Timeout: c.Config.CheckTokenTimeOut}
-		ctx := context.WithValue(context.Background(), oauth2.HTTPClient, httpClient)
-
-		// Password credentials call
-		token, err := c.Config.OAuth2Config.PasswordCredentialsToken(ctx, c.Config.Credentials.UserName, c.Config.Credentials.Password)
-		if err != nil {
-			c.Config.Logger.Infof("checkToken() - could not get the token: %v", err)
-			return err
-		}
-
-		// Token validation
-		if !token.Valid() {
-			c.Config.Logger.Infof("checkToken() - the new token is invalid")
-			return errors.New("checkToken() - the new token is invalid")
-		}
-
-		if token.TokenType != "Bearer" {
-			c.Config.Logger.Infof("checkToken() - bad token: expected 'Bearer', got '%s'", token.TokenType)
-			return errors.New("checkToken() - bad token: expected 'Bearer', got " + token.TokenType)
-		}
-
-		// Get an OAuth 2 client
-		oauth2Client := c.Config.OAuth2Config.Client(context.Background(), token)
-
-		// save the new token and Transport
-		c.Config.Token = token // store the token to check its validity before each call and manage expiration
-		c.Config.HTTPClient.Transport = oauth2Client.Transport
-		c.Config.Logger.Info("checkToken() - Token renewed")
+		return c.renewToken()
 	} else {
 		c.Config.Logger.Info("checkToken() - Token is still valid")
 	}
+
+	return nil
+}
+
+func (c *Client) renewToken() error {
+	c.Config.Logger.Info("renewToken() - A new token is requested")
+	// The custom transport adds the tenant ID to the header
+	transport := &duoKeyTransport{
+		TenantID:       c.Config.Credentials.TenantID,
+		HeaderTenantID: c.Config.Credentials.HeaderTenantID,
+		Logger:         c.Config.Logger,
+	}
+
+	httpClient := &http.Client{Transport: transport, Timeout: c.Config.CheckTokenTimeOut}
+	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, httpClient)
+
+	var token *oauth2.Token
+	var err error
+	// Password credentials call
+	token, err = c.Config.OAuth2Config.PasswordCredentialsToken(ctx, c.Config.Credentials.UserName, c.Config.Credentials.Password)
+	if err != nil {
+		c.Config.Logger.Infof("renewToken() - could not get the token: %v", err)
+		return err
+	}
+
+	// Token validation
+	if !token.Valid() {
+		c.Config.Logger.Infof("renewToken() - the new token is invalid")
+		return errors.New("renewToken() - the new token is invalid")
+	}
+
+	if token.TokenType != "Bearer" {
+		c.Config.Logger.Infof("renewToken() - bad token: expected 'Bearer', got '%s'", token.TokenType)
+		return errors.New("renewToken() - bad token: expected 'Bearer', got " + token.TokenType)
+	}
+
+	// Get an OAuth 2 client
+	oauth2Client := c.Config.OAuth2Config.Client(context.Background(), token)
+
+	// save the new token and Transport
+	c.Config.Token = token // store the token to check its validity before each call and manage expiration
+	c.Config.HTTPClient.Transport = oauth2Client.Transport
+	c.Config.Logger.Info("renewToken() - Token renewed")
 
 	return nil
 }
