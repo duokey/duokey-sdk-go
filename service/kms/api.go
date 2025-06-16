@@ -42,14 +42,14 @@ type ImportOutput struct {
 func (k *KMS) Import(input *ImportInput) (*ImportOutput, error) {
 	req, out := k.importRequest(input)
 
-	return out, req.Send()
+	return out, k.SendRequestWithTokenUpdate(req)
 }
 
 func (k *KMS) ImportWithContext(ctx context.Context, input *ImportInput) (*ImportOutput, error) {
 	req, out := k.importRequest(input)
 	req.SetContext(ctx)
 
-	return out, req.Send()
+	return out, k.SendRequestWithTokenUpdate(req)
 }
 
 func (k *KMS) importRequest(input *ImportInput) (req *request.Request, output *ImportOutput) {
@@ -127,7 +127,7 @@ func (k *KMS) CreateKey(input *CreateKeyInput) (*CreateKeyOutput, error) {
 
 	req, out := k.createKeyRequest(input)
 
-	return out, req.Send()
+	return out, k.SendRequestWithTokenUpdate(req)
 }
 
 // CreateKeyWithContext is the same operation as CreateKey. It is however possible
@@ -137,7 +137,7 @@ func (k *KMS) CreateKeyWithContext(ctx context.Context, input *CreateKeyInput) (
 	req, out := k.createKeyRequest(input)
 	req.SetContext(ctx)
 
-	return out, req.Send()
+	return out, k.SendRequestWithTokenUpdate(req)
 }
 
 func (k *KMS) createKeyRequest(input *CreateKeyInput) (req *request.Request, output *CreateKeyOutput) {
@@ -231,7 +231,7 @@ func (k *KMS) encryptRequest(input *EncryptInput, ctx context.Context) (*Encrypt
 			req.SetContext(ctx)
 		}
 
-		return out, req.Send()
+		return out, k.SendRequestWithTokenUpdate(req)
 	}
 }
 
@@ -362,7 +362,7 @@ func (k *KMS) Decrypt(input *DecryptInput) (*DecryptOutput, error) {
 
 	req, out := k.decryptRequest(input)
 
-	return out, req.Send()
+	return out, k.SendRequestWithTokenUpdate(req)
 }
 
 // DecryptWithContext is the same operation as Decrypt. It is however possible
@@ -372,7 +372,7 @@ func (k *KMS) DecryptWithContext(ctx context.Context, input *DecryptInput) (*Dec
 	req, out := k.decryptRequest(input)
 	req.SetContext(ctx)
 
-	return out, req.Send()
+	return out, k.SendRequestWithTokenUpdate(req)
 }
 
 func (k *KMS) decryptRequest(input *DecryptInput) (req *request.Request, output *DecryptOutput) {
@@ -463,7 +463,7 @@ func (k *KMS) GetKeyId(input *GetKeyIdInput) (*GetKeyOutput, error) {
 
 	req, out := k.getKeyIdRequest(input)
 
-	return out, req.Send()
+	return out, k.SendRequestWithTokenUpdate(req)
 }
 
 // GetKeyIdWithContext is the same operation as GetKeyId. It is however possible
@@ -473,7 +473,7 @@ func (k *KMS) GetKeyIdWithContext(ctx context.Context, input *GetKeyIdInput) (*G
 	req, out := k.getKeyIdRequest(input)
 	req.SetContext(ctx)
 
-	return out, req.Send()
+	return out, k.SendRequestWithTokenUpdate(req)
 }
 
 func (k *KMS) getKeyIdRequest(input *GetKeyIdInput) (req *request.Request, output *GetKeyOutput) {
@@ -513,7 +513,7 @@ func (k *KMS) GetKeyByName(input *GetKeyByNameInput) (*GetKeyOutput, error) {
 
 	req, out := k.getKeyByNameRequest(input)
 
-	return out, req.Send()
+	return out, k.SendRequestWithTokenUpdate(req)
 }
 
 // GetKeyByNameWithContext is the same operation as GetKeyByName. It is however possible
@@ -523,7 +523,7 @@ func (k *KMS) GetKeyByNameWithContext(ctx context.Context, input *GetKeyByNameIn
 	req, out := k.getKeyByNameRequest(input)
 	req.SetContext(ctx)
 
-	return out, req.Send()
+	return out, k.SendRequestWithTokenUpdate(req)
 }
 
 func (k *KMS) getKeyByNameRequest(input *GetKeyByNameInput) (req *request.Request, output *GetKeyOutput) {
@@ -565,7 +565,7 @@ func (k *KMS) DeleteKey(input *DeletekeyKeyInput) (*SuccessOutput, error) {
 
 	req, out := k.deleteKeyRequest(input)
 
-	return out, req.Send()
+	return out, k.SendRequestWithTokenUpdate(req)
 }
 
 // DeleteKeyWithContext is the same operation as DeleteKey. It is however possible
@@ -575,7 +575,7 @@ func (k *KMS) DeleteKeyWithContext(ctx context.Context, input *DeletekeyKeyInput
 	req, out := k.deleteKeyRequest(input)
 	req.SetContext(ctx)
 
-	return out, req.Send()
+	return out, k.SendRequestWithTokenUpdate(req)
 }
 
 func (k *KMS) deleteKeyRequest(input *DeletekeyKeyInput) (req *request.Request, output *SuccessOutput) {
@@ -629,7 +629,7 @@ type CSRImportOutput struct {
 func (k *KMS) CSRImport(input *CSRImportInput) (*CSRImportOutput, error) {
 	req, out := k.csrImportRequest(input)
 
-	return out, req.Send()
+	return out, k.SendRequestWithTokenUpdate(req)
 }
 
 func (k *KMS) CSRImportWithContext(ctx context.Context, input *CSRImportInput) (*CSRImportOutput, error) {
@@ -637,7 +637,7 @@ func (k *KMS) CSRImportWithContext(ctx context.Context, input *CSRImportInput) (
 	req, out := k.csrImportRequest(input)
 	req.SetContext(ctx)
 
-	return out, req.Send()
+	return out, k.SendRequestWithTokenUpdate(req)
 }
 
 func (k *KMS) csrImportRequest(input *CSRImportInput) (req *request.Request, output *CSRImportOutput) {
@@ -679,7 +679,7 @@ type CSRStatusOutput struct {
 func (k *KMS) CSRStatus(input *CSRStatusInput) (*CSRStatusOutput, error) {
 	req, out := k.csrStatusRequest(input)
 
-	return out, req.Send()
+	return out, k.SendRequestWithTokenUpdate(req)
 }
 
 func (k *KMS) CSRStatusWithContext(ctx context.Context, input *CSRStatusInput) (*CSRStatusOutput, error) {
@@ -687,7 +687,7 @@ func (k *KMS) CSRStatusWithContext(ctx context.Context, input *CSRStatusInput) (
 	req, out := k.csrStatusRequest(input)
 	req.SetContext(ctx)
 
-	return out, req.Send()
+	return out, k.SendRequestWithTokenUpdate(req)
 }
 
 func (k *KMS) csrStatusRequest(input *CSRStatusInput) (req *request.Request, output *CSRStatusOutput) {
@@ -727,7 +727,7 @@ type GetSignatureCAOutput struct {
 func (k *KMS) GetSignatureCA(input *GetSignatureCAInput) (*GetSignatureCAOutput, error) {
 	req, out := k.getSignatureCARequest(input)
 
-	return out, req.Send()
+	return out, k.SendRequestWithTokenUpdate(req)
 }
 
 func (k *KMS) GetSignatureCAWithContext(ctx context.Context, input *GetSignatureCAInput) (*GetSignatureCAOutput, error) {
@@ -735,7 +735,7 @@ func (k *KMS) GetSignatureCAWithContext(ctx context.Context, input *GetSignature
 	req, out := k.getSignatureCARequest(input)
 	req.SetContext(ctx)
 
-	return out, req.Send()
+	return out, k.SendRequestWithTokenUpdate(req)
 }
 
 func (k *KMS) getSignatureCARequest(input *GetSignatureCAInput) (req *request.Request, output *GetSignatureCAOutput) {

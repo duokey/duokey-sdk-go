@@ -323,13 +323,31 @@ func newClientWithMockServer(credentials credentials.Config, endpoints Endpoints
 
 // newClientWithStandardMockServer() instanciate a standard mock server calling the defined mock routes
 // the kms client and the mock server are both returned -> the mock server will have to be closed
+// About 401 and token renewal:
+// This server will return a 401 on first call, and will answer as expected the second call
+//
+//	actually, it fires 401 when the global variable mockServerTokenErrorCounterFor401Simulation==0
+//	this global variable allows to tailor some tests.
+//
+// This is done to test that each route implemetentation does handle the 401 as expected:
+// In the current version of the SDK, if a 401 occurs, a new token is requested
+// and the query is cloned and resent a second time
+var mockServerTokenErrorCounterFor401Simulation = 0
+
 func newClientWithStandardMockServer(t *testing.T) (*KMS, *httptest.Server) {
 	const headerTenantID = "Abp.TenantId"
+	mockServerTokenErrorCounterFor401Simulation = 0
 
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var payload []byte
 		var err error
 		var body []byte
+
+		// Simulating a 401 on first call
+		if mockServerTokenErrorCounterFor401Simulation == 0 {
+			mockServerTokenErrorCounterFor401Simulation += 1
+			http.Error(w, "Unauthorized user", http.StatusUnauthorized)
+		}
 
 		tenantID := r.Header.Get(headerTenantID)
 		if tenantID == "" {
@@ -503,63 +521,8 @@ func newClientWithStandardMockServer(t *testing.T) (*KMS, *httptest.Server) {
 }
 
 func TestEncryptDecrypt(t *testing.T) {
-
-	const headerTenantID = "Abp.TenantId"
-
-	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var payload []byte
-		var err error
-		var body []byte
-
-		tenantID := r.Header.Get(headerTenantID)
-		if tenantID == "" {
-			t.Error("Tenant ID not found")
-		}
-		_, err = strconv.Atoi(tenantID)
-		if err != nil {
-			t.Error("TenantID: bad format")
-		}
-
-		if payload, err = ioutil.ReadAll(r.Body); err != nil {
-			t.Fail()
-		}
-
-		switch r.RequestURI {
-		case encryptRoute:
-			if body, err = mockEncrypt(payload); err != nil {
-				t.Fail()
-			}
-		case decryptRoute:
-			if body, err = mockDecrypt(payload); err != nil {
-				t.Fail()
-			}
-		default:
-			t.Fail()
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(body)
-	}))
+	kmsClient, mockServer := newClientWithStandardMockServer(t)
 	defer mockServer.Close()
-
-	endpoints := Endpoints{
-		BaseURL:      mockServer.URL,
-		EncryptRoute: encryptRoute,
-		DecryptRoute: decryptRoute,
-	}
-
-	credentials := credentials.Config{
-		Issuer:         endpoints.BaseURL,
-		ClientID:       "client",
-		ClientSecret:   uuid.New().String(),
-		UserName:       "jane.doe",
-		Password:       "tooManyS3cr3ts!",
-		Scope:          "key",
-		HeaderTenantID: headerTenantID,
-		TenantID:       1,
-	}
-
-	kmsClient := newClientWithMockServer(credentials, endpoints, mockServer.Client())
 
 	eInput := &EncryptInput{
 		KeyID:   uuid.New().String(),
@@ -578,12 +541,14 @@ func TestEncryptDecrypt(t *testing.T) {
 		Payload: eOutput.Result.EncryptedPayload,
 	}
 
+	mockServerTokenErrorCounterFor401Simulation = 0
+
 	dOutput, err := kmsClient.Decrypt(dInput)
 	if err != nil {
 		t.Fail()
+	} else {
+		assert.Equal(t, eInput.Payload, dOutput.Result.Payload, "The two plaintexts should be the same.")
 	}
-
-	assert.Equal(t, eInput.Payload, dOutput.Result.Payload, "The two plaintexts should be the same.")
 }
 
 func TestEncryptWithTimeout(t *testing.T) {
