@@ -781,7 +781,7 @@ func (k *KMS) CreateOrEditObject(input *CreateOrEditObjectInput) (*CreateObjectO
 
 	req, out := k.createOrEditObjectRequest(input)
 
-	return out, req.Send()
+	return out, k.SendRequestWithTokenUpdate(req)
 }
 
 // CreateKeyWithContext is the same operation as CreateKey. It is however possible
@@ -791,7 +791,7 @@ func (k *KMS) CreateOrEditObjectWithContext(ctx context.Context, input *CreateOr
 	req, out := k.createOrEditObjectRequest(input)
 	req.SetContext(ctx)
 
-	return out, req.Send()
+	return out, k.SendRequestWithTokenUpdate(req)
 }
 
 func (k *KMS) createOrEditObjectRequest(input *CreateOrEditObjectInput) (req *request.Request, output *CreateObjectOutput) {
@@ -856,7 +856,7 @@ func (k *KMS) GetObjecByName(input *GetObjectByNameInput) (*GetObjectOutput, err
 
 	req, out := k.getObjectByNameRequest(input)
 
-	return out, req.Send()
+	return out, k.SendRequestWithTokenUpdate(req)
 }
 
 // GetObjecByNameWithContext is the same operation as GetObjecByNameWithContext. It is however possible
@@ -866,7 +866,7 @@ func (k *KMS) GetObjecByNameWithContext(ctx context.Context, input *GetObjectByN
 	req, out := k.getObjectByNameRequest(input)
 	req.SetContext(ctx)
 
-	return out, req.Send()
+	return out, k.SendRequestWithTokenUpdate(req)
 }
 
 func (k *KMS) getObjectByNameRequest(input *GetObjectByNameInput) (req *request.Request, output *GetObjectOutput) {
@@ -903,7 +903,7 @@ func (k *KMS) GetObjecById(input *GetObjectByIdInput) (*GetObjectOutput, error) 
 
 	req, out := k.getObjectByIdRequest(input)
 
-	return out, req.Send()
+	return out, k.SendRequestWithTokenUpdate(req)
 }
 
 // GetObjecByIdWithContext is the same operation as GetObjecById. It is however possible
@@ -913,7 +913,7 @@ func (k *KMS) GetObjecByIdWithContext(ctx context.Context, input *GetObjectByIdI
 	req, out := k.getObjectByIdRequest(input)
 	req.SetContext(ctx)
 
-	return out, req.Send()
+	return out, k.SendRequestWithTokenUpdate(req)
 }
 
 func (k *KMS) getObjectByIdRequest(input *GetObjectByIdInput) (req *request.Request, output *GetObjectOutput) {
