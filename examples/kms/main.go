@@ -591,8 +591,8 @@ func testKeysOperations(vaultClient *kms.KMS) {
 func testCreateKeysOperations(vaultClient *kms.KMS) {
 	createKey := true
 	deleteKey := false
-	// keyName := "fab-object-test-software-vault" // "fab-AES-128-test-software-vault-2"
-	keyName := "fab-RSA-20248-test-software-vault"
+	// keyName := "fab-AES-128-test-software-vault-2"
+	keyName := "fab_rsa_2048_hsm_securosys-2"
 	//keyName := "fab-RSA-2048-test-1"
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Millisecond*50000)) // Fab tmp: increase from 10000 to 50000 to have time debuging
