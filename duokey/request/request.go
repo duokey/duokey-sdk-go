@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -141,6 +142,9 @@ func parseHTTPResponse(resp *http.Response, response interface{}) error {
 		return errors.Wrap(err, "failed to read response body")
 	}
 
+	// Warning: some calling functions, to get the error StatusCode, will compare with the string returned currently
+	// For instance for 401, check if "request failed with status 401"
+	// Therefore be cautious if modifying this error's message
 	if resp.StatusCode >= http.StatusMultipleChoices {
 		return fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(payload))
 	}
@@ -152,6 +156,32 @@ func parseHTTPResponse(resp *http.Response, response interface{}) error {
 	}
 
 	return nil
+}
+
+// CloneRequest cloning a request is useful when a request must be sent a
+// second time, for instance when the token has been renewed
+func (r *Request) CloneRequest(config *duokey.Config) (*Request, error) {
+	var bodyBytes []byte
+	if r.HTTPRequest.Body != nil {
+		var err error
+		bodyBytes, err = io.ReadAll(r.HTTPRequest.Body)
+		if err != nil {
+			return nil, err
+		}
+		r.HTTPRequest.Body = io.NopCloser(bytes.NewReader(bodyBytes))
+	}
+
+	cloneHTTPRequest := r.HTTPRequest.Clone(r.HTTPRequest.Context())
+	if bodyBytes != nil {
+		cloneHTTPRequest.Body = io.NopCloser(bytes.NewReader(bodyBytes))
+	}
+	return &Request{
+		HTTPClient:  config.HTTPClient,
+		HTTPRequest: cloneHTTPRequest,
+		Error:       nil,
+		Parameters:  r.Parameters,
+		Response:    r.Response,
+	}, nil
 }
 
 // SetContext adds a context to a request.
