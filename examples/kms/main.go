@@ -295,7 +295,7 @@ func main() {
 	// To run testKeysOperations(), adapt the parameters
 	// For Fabian: launch.json, use the parameters "App to try the sdk with the cockpit demo (not test) - works in December 2024"
 	//testCreateKeysOperations(vaultClient)
-	//testKeysOperations(vaultClient)
+	testKeysOperations(vaultClient)
 	// To run testCSROperations(), adapt the parameters
 	// For Fabian: launch.json, use the parameters "App for SCEP (on cockpit-api-test) - from Pargat - August 2024"
 	//testCSROperations(vaultClient)
@@ -304,7 +304,7 @@ func main() {
 	//testAuthenticateUser(vaultClient, credentials.UserName, credentials.Password)
 	//testGetSignatureCA(vaultClient)
 	//testCreateObjectsOperations(vaultClient)
-	testGetObjectAndGetKeyByName(vaultClient)
+	//testGetObjectAndGetKeyByName(vaultClient)
 }
 
 // Testing the authentication of a user with a user/pwd
@@ -468,7 +468,7 @@ func testKeysOperations(vaultClient *kms.KMS) {
 	// aad := "bGFiZWw="
 	// message := "This is my original message" // "TG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQ="
 	// payload := []byte(message)
-	//
+
 	// ** AES-CBC **
 	// 		payload size must be a multiple of 16 (padding done by the client)
 	// 		iv for AES-CBC 16 bytes
@@ -497,6 +497,8 @@ func testKeysOperations(vaultClient *kms.KMS) {
 		Payload: payload,
 	}
 
+	// In June 2025, it seems that those Context information are no more needed
+	// at least they are not mandatory as the call works without them
 	eInput.Context = make(map[string]string)
 	eInput.Context["ipaddr"] = string(ip)
 	eInput.Context["appid"] = appID // appid Added As It Is Mandatory
@@ -533,6 +535,8 @@ func testKeysOperations(vaultClient *kms.KMS) {
 	}
 
 	// Context Information Added As It Is Mandatory
+	// In June 2025, it seems that those Context information are no more needed
+	// at least they are not mandatory as the call works without them
 	dInput.Context = make(map[string]string)
 	dInput.Context["appid"] = appID
 
@@ -590,9 +594,9 @@ func testKeysOperations(vaultClient *kms.KMS) {
 
 func testCreateKeysOperations(vaultClient *kms.KMS) {
 	createKey := true
-	deleteKey := false
+	deleteKey := true
 	// keyName := "fab-AES-128-test-software-vault-2"
-	keyName := "fab_rsa_2048_hsm_securosys-2"
+	keyName := "fab_rsa_2048_hsm_securosys-3"
 	//keyName := "fab-RSA-2048-test-1"
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Millisecond*50000)) // Fab tmp: increase from 10000 to 50000 to have time debuging
@@ -767,11 +771,16 @@ func testCreateObjectsOperations(vaultClient *kms.KMS) {
 // A function to debug the Cockpit behavior
 // As a GetKeyByNameWithContext after a GetObjecByNameWithContext does have some latency when writing the activity log
 func testGetObjectAndGetKeyByName(vaultClient *kms.KMS) {
-	objectName := "fab-object-test-software-vault"
+	// objectName := "fab-object-test-software-vault"
 	//objectName := "fab-object-test-software-vault-auditLogDidabled"
+	//objectName := "fab-object-test-software-vault-keytype-dataobject-2"
 	//objectExternalId := "87188509-a500-4f53-af88-814ab1b8e3fe"
+	//objectName := "fab-AES-128-test-software-vault-2" // a key
+	// Securosys
+	// objectName := "fab-object-test-primus-vault-keytype-dataobject" // an object
+	objectName := "fab_aes_128_hsm_securosys" // a key
 
-	timeOutValue := time.Duration(time.Millisecond * 10000)
+	timeOutValue := time.Duration(time.Millisecond * 30000)
 
 	ctx, cancel := context.WithTimeout(context.Background(), timeOutValue)
 	defer cancel()
@@ -792,22 +801,23 @@ func testGetObjectAndGetKeyByName(vaultClient *kms.KMS) {
 		fmt.Println("objectOutput.Result.Object.ExternalId : ", getObjectOutput.Result.Object.ExternalId)
 		fmt.Println("objectOutput.Result.Object.Id : ", getObjectOutput.Result.Object.Id)
 		fmt.Println("objectOutput.Result.Object.ObjectData : ", getObjectOutput.Result.Object.ObjectData)
+
+		fmt.Println("*** Get Object by Id request ***")
+		getObjectIdInput := &kms.GetObjectByIdInput{
+			ExternalID: getObjectOutput.Result.Object.ExternalId,
+		}
+
+		getObjectIdOutput, err := vaultClient.GetObjecByIdWithContext(ctx, getObjectIdInput)
+		if err != nil {
+			fmt.Println("GetKeyByName request failed:", err.Error())
+			// os.Exit(1)
+		} else {
+			fmt.Println("objectOutput.Result.Object.Name : ", getObjectIdOutput.Result.Object.Name)
+			fmt.Println("objectOutput.Result.Object.ExternalId : ", getObjectIdOutput.Result.Object.ExternalId)
+			fmt.Println("objectOutput.Result.Object.Id : ", getObjectIdOutput.Result.Object.Id)
+			fmt.Println("objectOutput.Result.Object.ObjectData : ", getObjectIdOutput.Result.Object.ObjectData)
+		}
 	}
-	// fmt.Println("*** Get Object by Id request ***")
-	// getObjectInput := &kms.GetObjectByIdInput{
-	// 	ExternalID: objectExternalId,
-	// }
-
-	// getObjectOutput, err := vaultClient.GetObjecByIdWithContext(ctx, getObjectInput)
-	// if err != nil {
-	// 	fmt.Println("GetKeyByName request failed:", err.Error())
-	// 	os.Exit(1)
-	// }
-
-	// fmt.Println("objectOutput.Result.Object.Name : ", getObjectOutput.Result.Object.Name)
-	// fmt.Println("objectOutput.Result.Object.ExternalId : ", getObjectOutput.Result.Object.ExternalId)
-	// fmt.Println("objectOutput.Result.Object.Id : ", getObjectOutput.Result.Object.Id)
-	// fmt.Println("objectOutput.Result.Object.ObjectData : ", getObjectOutput.Result.Object.ObjectData)
 
 	fmt.Println("*** FIRST GetKeyByName request ***")
 	// GetKeyByName to get the key ID for further key deletion
@@ -829,7 +839,20 @@ func testGetObjectAndGetKeyByName(vaultClient *kms.KMS) {
 		fmt.Println("keyOutput.Result.Key.Name : ", getKeyOutput.Result.Key.Name)
 		fmt.Println("keyOutput.Result.Key.ExternalId : ", getKeyOutput.Result.Key.ExternalId)
 		fmt.Println("keyOutput.Result.Key.Id : ", getKeyOutput.Result.Key.Id)
-		fmt.Println("keyOutput.Result.Key.Comment : ", getKeyOutput.Result.Key.Comment)
+
+		fmt.Println("*** Get Key by Id request ***")
+		getKeyIdInput := &kms.GetKeyIdInput{
+			ExternalID: getKeyOutput.Result.Key.ExternalId,
+		}
+
+		getKeyIdOutput, err := vaultClient.GetKeyIdWithContext(ctx, getKeyIdInput)
+		if err != nil {
+			fmt.Println("GetKeyByName request failed:", err.Error())
+		} else {
+			fmt.Println("getKeyIdOutput.Result.Key.Name : ", getKeyIdOutput.Result.Key.Name)
+			fmt.Println("getKeyIdOutput.Result.Key.ExternalId : ", getKeyIdOutput.Result.Key.ExternalId)
+			fmt.Println("getKeyIdOutput.Result.Key.Id : ", getKeyIdOutput.Result.Key.Id)
+		}
 	}
 
 	// fmt.Println("*** SECOND GetKeyByName request ***")
