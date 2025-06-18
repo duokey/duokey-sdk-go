@@ -14,8 +14,6 @@ type Logger interface {
 	Infof(string, ...interface{})
 	Debug(...interface{})
 	Debugf(string, ...interface{})
-	Warning(...interface{})
-	Warningf(string, ...interface{})
 	Error(...interface{})
 	Errorf(string, ...interface{})
 }
@@ -49,14 +47,6 @@ func (dl defaultLogger) Error(args ...interface{}) {
 }
 
 func (dl defaultLogger) Errorf(format string, args ...interface{}) {
-	dl.logger.Output(2, fmt.Sprintf(format, args...))
-}
-
-func (dl defaultLogger) Warning(args ...interface{}) {
-	dl.logger.Output(2, fmt.Sprint(args...))
-}
-
-func (dl defaultLogger) Warningf(format string, args ...interface{}) {
 	dl.logger.Output(2, fmt.Sprintf(format, args...))
 }
 
