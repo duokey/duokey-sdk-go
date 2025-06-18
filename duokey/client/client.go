@@ -90,7 +90,7 @@ func New(creds credentials.Config, logger duokey.Logger, checkTokenTimeOut int) 
 	// Read the discovery document
 	oauth2Config, err := credentials.GetOauth2Config(creds)
 	if err != nil {
-		clientConfig.Logger.Infof("could not read the token and authorization URLs from the discovery document: %v", err)
+		clientConfig.Logger.Errorf("could not read the token and authorization URLs from the discovery document: %v", err)
 		return nil, err
 	}
 
@@ -188,7 +188,7 @@ func (c *Client) checkToken() error {
 	renew := false
 
 	if c.Config.OAuth2Config == nil {
-		c.Config.Logger.Info("checkToken() failed: c.Config.OAuth2Config == nil")
+		c.Config.Logger.Error("checkToken() failed: c.Config.OAuth2Config == nil")
 		return errors.New("checkToken() failed: c.Config.OAuth2Config == nil")
 	}
 
@@ -197,20 +197,20 @@ func (c *Client) checkToken() error {
 		renew = !c.Config.Token.Valid()
 	} else { // no token yet
 		renew = true
-		c.Config.Logger.Info("checkToken() - No token present")
+		c.Config.Logger.Debug("checkToken() - No token present")
 	}
 
 	if renew {
 		return c.renewToken()
 	} else {
-		c.Config.Logger.Info("checkToken() - Token is still valid")
+		c.Config.Logger.Debug("checkToken() - Token is still valid")
 	}
 
 	return nil
 }
 
 func (c *Client) renewToken() error {
-	c.Config.Logger.Info("renewToken() - A new token is requested")
+	c.Config.Logger.Debug("renewToken() - A new token is requested")
 	// The custom transport adds the tenant ID to the header
 	transport := &duoKeyTransport{
 		TenantID:       c.Config.Credentials.TenantID,
@@ -226,18 +226,18 @@ func (c *Client) renewToken() error {
 	// Password credentials call
 	token, err = c.Config.OAuth2Config.PasswordCredentialsToken(ctx, c.Config.Credentials.UserName, c.Config.Credentials.Password)
 	if err != nil {
-		c.Config.Logger.Infof("renewToken() - could not get the token: %v", err)
+		c.Config.Logger.Errorf("renewToken() - could not get the token: %v", err)
 		return err
 	}
 
 	// Token validation
 	if !token.Valid() {
-		c.Config.Logger.Infof("renewToken() - the new token is invalid")
+		c.Config.Logger.Errorf("renewToken() - the new token is invalid")
 		return errors.New("renewToken() - the new token is invalid")
 	}
 
 	if token.TokenType != "Bearer" {
-		c.Config.Logger.Infof("renewToken() - bad token: expected 'Bearer', got '%s'", token.TokenType)
+		c.Config.Logger.Errorf("renewToken() - bad token: expected 'Bearer', got '%s'", token.TokenType)
 		return errors.New("renewToken() - bad token: expected 'Bearer', got " + token.TokenType)
 	}
 
@@ -257,11 +257,11 @@ func (c *Client) renewToken() error {
 // Validation is done by requesting a token, which is returned
 func (c *Client) AuthenticateUser(UserName string, Password string) (*oauth2.Token, error) {
 	if c.Config.OAuth2Config == nil {
-		c.Config.Logger.Info("AuthenticateUser() failed: c.Config.OAuth2Config == nil")
+		c.Config.Logger.Error("AuthenticateUser() failed: c.Config.OAuth2Config == nil")
 		return nil, errors.New("AuthenticateUser() failed: c.Config.OAuth2Config == nil")
 	}
 
-	c.Config.Logger.Info("AuthenticateUser() - Requesting a token")
+	c.Config.Logger.Debug("AuthenticateUser() - Requesting a token")
 	// The custom transport adds the tenant ID to the header
 	transport := &duoKeyTransport{
 		TenantID:       c.Config.Credentials.TenantID,
@@ -275,18 +275,18 @@ func (c *Client) AuthenticateUser(UserName string, Password string) (*oauth2.Tok
 	// Password credentials call
 	token, err := c.Config.OAuth2Config.PasswordCredentialsToken(ctx, UserName, Password)
 	if err != nil {
-		c.Config.Logger.Infof("AuthenticateUser() - could not get the token: %v", err)
+		c.Config.Logger.Errorf("AuthenticateUser() - could not get the token: %v", err)
 		return nil, err
 	}
 
 	// Token validation
 	if !token.Valid() {
-		c.Config.Logger.Infof("AuthenticateUser() - the new token is invalid")
+		c.Config.Logger.Errorf("AuthenticateUser() - the new token is invalid")
 		return nil, errors.New("AuthenticateUser() - the new token is invalid")
 	}
 
 	if token.TokenType != "Bearer" {
-		c.Config.Logger.Infof("AuthenticateUser() - bad token: expected 'Bearer', got '%s'", token.TokenType)
+		c.Config.Logger.Errorf("AuthenticateUser() - bad token: expected 'Bearer', got '%s'", token.TokenType)
 		return nil, errors.New("AuthenticateUser() - bad token: expected 'Bearer', got " + token.TokenType)
 	}
 
