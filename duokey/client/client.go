@@ -90,7 +90,7 @@ func New(creds credentials.Config, logger duokey.Logger, checkTokenTimeOut int) 
 	// Read the discovery document
 	oauth2Config, err := credentials.GetOauth2Config(creds)
 	if err != nil {
-		clientConfig.Logger.Errorf("could not read the token and authorization URLs from the discovery document: %v", err)
+		clientConfig.Logger.Warnf("could not read the token and authorization URLs from the discovery document: %v", err)
 		return nil, err
 	}
 
@@ -184,11 +184,11 @@ func (c *Client) GetMandatoryContext() map[string]string {
 //	For machine-to-machine (M2M) communication where microservices access protected APIs, the Client Credentials Grant is the preferred method:
 //	When the Access Token expires, the microservice simply requests a new token using the same client credentials, without the need for a refresh token.
 func (c *Client) checkToken() error {
-	c.Config.Logger.Info("checkToken() - checking the current token")
+	c.Config.Logger.Debug("checkToken() - checking the current token")
 	renew := false
 
 	if c.Config.OAuth2Config == nil {
-		c.Config.Logger.Error("checkToken() failed: c.Config.OAuth2Config == nil")
+		c.Config.Logger.Warn("checkToken() failed: c.Config.OAuth2Config == nil")
 		return errors.New("checkToken() failed: c.Config.OAuth2Config == nil")
 	}
 
@@ -226,18 +226,18 @@ func (c *Client) renewToken() error {
 	// Password credentials call
 	token, err = c.Config.OAuth2Config.PasswordCredentialsToken(ctx, c.Config.Credentials.UserName, c.Config.Credentials.Password)
 	if err != nil {
-		c.Config.Logger.Errorf("renewToken() - could not get the token: %v", err)
+		c.Config.Logger.Warnf("renewToken() - could not get the token: %v", err)
 		return err
 	}
 
 	// Token validation
 	if !token.Valid() {
-		c.Config.Logger.Errorf("renewToken() - the new token is invalid")
+		c.Config.Logger.Warnf("renewToken() - the new token is invalid")
 		return errors.New("renewToken() - the new token is invalid")
 	}
 
 	if token.TokenType != "Bearer" {
-		c.Config.Logger.Errorf("renewToken() - bad token: expected 'Bearer', got '%s'", token.TokenType)
+		c.Config.Logger.Warnf("renewToken() - bad token: expected 'Bearer', got '%s'", token.TokenType)
 		return errors.New("renewToken() - bad token: expected 'Bearer', got " + token.TokenType)
 	}
 
@@ -247,7 +247,7 @@ func (c *Client) renewToken() error {
 	// save the new token and Transport
 	c.Config.Token = token // store the token to check its validity before each call and manage expiration
 	c.Config.HTTPClient.Transport = oauth2Client.Transport
-	c.Config.Logger.Info("renewToken() - Token renewed")
+	c.Config.Logger.Debug("renewToken() - Token renewed")
 
 	return nil
 }
@@ -257,7 +257,7 @@ func (c *Client) renewToken() error {
 // Validation is done by requesting a token, which is returned
 func (c *Client) AuthenticateUser(UserName string, Password string) (*oauth2.Token, error) {
 	if c.Config.OAuth2Config == nil {
-		c.Config.Logger.Error("AuthenticateUser() failed: c.Config.OAuth2Config == nil")
+		c.Config.Logger.Warn("AuthenticateUser() failed: c.Config.OAuth2Config == nil")
 		return nil, errors.New("AuthenticateUser() failed: c.Config.OAuth2Config == nil")
 	}
 
@@ -275,18 +275,18 @@ func (c *Client) AuthenticateUser(UserName string, Password string) (*oauth2.Tok
 	// Password credentials call
 	token, err := c.Config.OAuth2Config.PasswordCredentialsToken(ctx, UserName, Password)
 	if err != nil {
-		c.Config.Logger.Errorf("AuthenticateUser() - could not get the token: %v", err)
+		c.Config.Logger.Warnf("AuthenticateUser() - could not get the token: %v", err)
 		return nil, err
 	}
 
 	// Token validation
 	if !token.Valid() {
-		c.Config.Logger.Errorf("AuthenticateUser() - the new token is invalid")
+		c.Config.Logger.Warnf("AuthenticateUser() - the new token is invalid")
 		return nil, errors.New("AuthenticateUser() - the new token is invalid")
 	}
 
 	if token.TokenType != "Bearer" {
-		c.Config.Logger.Errorf("AuthenticateUser() - bad token: expected 'Bearer', got '%s'", token.TokenType)
+		c.Config.Logger.Warnf("AuthenticateUser() - bad token: expected 'Bearer', got '%s'", token.TokenType)
 		return nil, errors.New("AuthenticateUser() - bad token: expected 'Bearer', got " + token.TokenType)
 	}
 
