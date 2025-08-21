@@ -14,6 +14,11 @@ import (
 	"github.com/duokey/duokey-sdk-go/service/kms"
 )
 
+/*
+This file contains example code to call different routes
+See the comment of main() for a few more explanations
+*/
+
 var (
 	// Application
 	appID string
@@ -40,7 +45,7 @@ var (
 	getKeyIdRoute     string
 	getKeyByNameRoute string
 
-	// CSR + SCEP
+	// CSR + SCEP/EST
 	csrImportRoute string
 	csrStatusRoute string
 	getSignatureCA string
@@ -242,9 +247,9 @@ func getConfig() {
 }
 
 /*
-* main() with an encrypt/decrypt example + getKeyID
-* The key is set in the DUOKEY_KEY_ID variable
-*	This code was tested with an RSA or AES key
+* main() with example to call different routes
+* Relying on some environment variables to configure the tests
+* 	For different operations, the key ID is set in the DUOKEY_KEY_ID variable
 * For RSA operations:
 *	Algorithm: "RSA-OAEP-256"
 *		In former versions, was "3", used for Sepior
@@ -268,7 +273,7 @@ func main() {
 		TenantID:       tenantID,
 	}
 
-	// Routes are no more mandatory as parameters
+	// Routes are no more mandatory as parameters in this current sdk version
 	// If not set, default value will be set in NewClient()
 	endpoints := kms.Endpoints{
 		BaseURL:             baseURL,
@@ -284,7 +289,7 @@ func main() {
 		GetSignatureCARoute: getSignatureCA,
 	}
 
-	// Note: a 3 optional parameter allows to set the checkTokenTimeOut in seconds
+	// Note: a 3rd optional parameter allows to set the checkTokenTimeOut in seconds
 	// Example: vaultClient, err := kms.NewClient(credentials, endpoints, 5) -> 5 seconds timeout
 	vaultClient, err := kms.NewClient(credentials, endpoints)
 	if err != nil {
@@ -293,16 +298,16 @@ func main() {
 	}
 
 	// To run testKeysOperations(), adapt the parameters
-	// For Fabian: launch.json, use the parameters "App to try the sdk with the cockpit demo (not test) - works in December 2024"
-	testCreateKeysOperations(vaultClient)
-	//testKeysOperations(vaultClient)
+	//testCreateKeysOperations(vaultClient)
+	testKeysOperations(vaultClient)
 	// To run testCSROperations(), adapt the parameters
-	// For Fabian: launch.json, use the parameters "App for SCEP (on cockpit-api-test) - from Pargat - August 2024"
 	//testCSROperations(vaultClient)
 	// testAuthenticateUser(): should be done with other credentials than the ones used by this duokey-sdk-go
 	//	But here testing the functionality with the same credentials
 	//testAuthenticateUser(vaultClient, credentials.UserName, credentials.Password)
 	//testGetSignatureCA(vaultClient)
+	//testCreateObjectsOperations(vaultClient)
+	//testGetObjectAndGetKeyByName(vaultClient)
 }
 
 // Testing the authentication of a user with a user/pwd
@@ -343,8 +348,6 @@ AKLoVJ3cuU9Hghi76qE=`
 
 	// a generated GUID, for tests
 	transactionID := "ac84c56f-80cb-4a88-b970-622156f4920a" // commonName "commonName16092024"
-	// transactionID := "c5bc193b-6974-4908-8158-54b48a4b8759" // commonName "commonName13092024_2"
-	// transactionID := "b6ed1fd5-8871-4d6d-936e-cac1ecefcc2b" // commonName "commonName13092024"
 
 	eInput := &kms.CSRImportInput{
 		CSR: csrPEM,
@@ -373,7 +376,7 @@ AKLoVJ3cuU9Hghi76qE=`
 	// The CommonName and TransactionID should match (same as the pair used for the /ImportCertificateCSR call)
 	fmt.Println("CSR Status request")
 	eInputStatus := &kms.CSRStatusInput{
-		CommonName:    "commonName16092024", // "commonName16092024", "commonName13092024", "commonName13092024_2", "scepclient",
+		CommonName:    "commonName16092024",
 		TransactionID: transactionID,
 	}
 
@@ -389,7 +392,7 @@ AKLoVJ3cuU9Hghi76qE=`
 	}
 }
 
-// Testing the get scep signature CA from cockpit
+// Testing the get SCEP/EST signature CA from cockpit
 func testGetSignatureCA(vaultClient *kms.KMS) {
 
 	eInput := &kms.GetSignatureCAInput{
@@ -450,20 +453,23 @@ func testKeysOperations(vaultClient *kms.KMS) {
 	//		and it depends on the Cockpit Vault (vaultID from the input parameters))
 	//		At the time of writing this example, March 2025, only the MPC (Sepior) Cockpit vault does handle AES-CBC
 	// ** RSA-OAEP-256 **
-	// algorithm := "RSA-OAEP-256"
-	// iv := ""
-	// aad := ""
+	algorithm := "RSA-OAEP-256"
+	iv := ""
+	aad := ""
 	// message := "TG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQ="
-	// payload := []byte(message)
-	//
-	// ** AES-GCM **
-	// 		iv for AES-GCM should be 12 bytes (recommandation for optimal security and performance)
-	algorithm := "AES-GCM"
-	iv := "YWJjZGVmZ2hpamts"
-	aad := "bGFiZWw="
-	message := "This is my original message" // "TG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQ="
+	message := "ceciEstMonTextSecret"
 	payload := []byte(message)
 	//
+	// ** AES-GCM **
+	// Note: AES-GCM seems to fail with Securosy, seems that received Tag is empty
+	// 	to be further investigated if needed
+	// 	// iv for AES-GCM should be 12 bytes (recommandation for optimal security and performance)
+	// algorithm := "AES-GCM"
+	// iv := "YWJjZGVmZ2hpamts"
+	// aad := "bGFiZWw="
+	// message := "This is my original message" // "TG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQ="
+	// payload := []byte(message)
+
 	// ** AES-CBC **
 	// 		payload size must be a multiple of 16 (padding done by the client)
 	// 		iv for AES-CBC 16 bytes
@@ -492,6 +498,8 @@ func testKeysOperations(vaultClient *kms.KMS) {
 		Payload: payload,
 	}
 
+	// In June 2025, it seems that those Context information are no more needed
+	// at least they are not mandatory as the call works without them
 	eInput.Context = make(map[string]string)
 	eInput.Context["ipaddr"] = string(ip)
 	eInput.Context["appid"] = appID // appid Added As It Is Mandatory
@@ -511,6 +519,7 @@ func testKeysOperations(vaultClient *kms.KMS) {
 	}
 
 	fmt.Println("Encrypted payload: " + string(eOutput.Result.EncryptedPayload))
+	fmt.Println("Encrypted Result.Tag (needed for AES-GCM): " + string(eOutput.Result.Tag))
 
 	// Decryption
 	dInput := &kms.DecryptInput{
@@ -527,6 +536,8 @@ func testKeysOperations(vaultClient *kms.KMS) {
 	}
 
 	// Context Information Added As It Is Mandatory
+	// In June 2025, it seems that those Context information are no more needed
+	// at least they are not mandatory as the call works without them
 	dInput.Context = make(map[string]string)
 	dInput.Context["appid"] = appID
 
@@ -584,8 +595,9 @@ func testKeysOperations(vaultClient *kms.KMS) {
 
 func testCreateKeysOperations(vaultClient *kms.KMS) {
 	createKey := true
-	deleteKey := false
-	keyName := "fab-AES-128-test-software-vault-2"
+	deleteKey := true
+	// keyName := "fab-AES-128-test-software-vault-2"
+	keyName := "fab_rsa_2048_hsm_securosys-3"
 	//keyName := "fab-RSA-2048-test-1"
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Millisecond*50000)) // Fab tmp: increase from 10000 to 50000 to have time debuging
@@ -593,38 +605,38 @@ func testCreateKeysOperations(vaultClient *kms.KMS) {
 
 	if createKey {
 		// Creating a AES-128 key
-		eInput := &kms.CreateKeyInput{
-			VaultID:          vaultID,
-			KeyName:          keyName,
-			KeyType:          "AES 128",
-			KeySize:          128,
-			Description:      "Description test from duokey-sdk-go",
-			Comment:          "A comment test from duokey-sdk-go",
-			IsEnabled:        true,
-			State:            1, // 0 = preActive, 1=active
-			Id:               "",
-			IsDecrypt:        true,
-			IsEncrypt:        true,
-			IsAuditLogEnable: true,
-			PublishPublicKey: false,
-			Reason:           0,
-		}
-
-		// Creating a RSA-20248 key
 		// eInput := &kms.CreateKeyInput{
 		// 	VaultID:          vaultID,
 		// 	KeyName:          keyName,
-		// 	KeyType:          "RSA 2048",
-		// 	KeySize:          2048,
+		// 	KeyType:          "AES 128",
+		// 	KeySize:          128,
+		// 	Description:      "Description test from duokey-sdk-go",
+		// 	Comment:          "A comment test from duokey-sdk-go",
 		// 	IsEnabled:        true,
 		// 	State:            1, // 0 = preActive, 1=active
 		// 	Id:               "",
 		// 	IsDecrypt:        true,
-		// 	IsEncrypt:        false,
+		// 	IsEncrypt:        true,
 		// 	IsAuditLogEnable: true,
 		// 	PublishPublicKey: false,
 		// 	Reason:           0,
 		// }
+
+		// Creating a RSA-20248 key
+		eInput := &kms.CreateKeyInput{
+			VaultID:          vaultID,
+			KeyName:          keyName,
+			KeyType:          "RSA 2048",
+			KeySize:          2048,
+			IsEnabled:        true,
+			State:            1, // 0 = preActive, 1=active
+			Id:               "",
+			IsDecrypt:        true,
+			IsEncrypt:        false,
+			IsAuditLogEnable: true,
+			PublishPublicKey: false,
+			Reason:           0,
+		}
 
 		eInput.Context = make(map[string]string)
 		eInput.Context["appid"] = appID // appid Added As It Is Mandatory
@@ -683,6 +695,157 @@ func testCreateKeysOperations(vaultClient *kms.KMS) {
 			fmt.Println("DeleteKey result: Success=True")
 		} else {
 			fmt.Println("DeleteKey result: Strange behavior as no error was raised but Success=False")
+		}
+	}
+}
+
+func testCreateObjectsOperations(vaultClient *kms.KMS) {
+	createObject := false
+	objectName := "fab-object-test-software-vault-keytype-dataobject-2"
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Millisecond*100000)) // Fab tmp: increase from 10000 to 50000 to have time debuging
+	defer cancel()
+
+	if createObject {
+		eInput := &kms.CreateOrEditObjectInput{
+			VaultID:    vaultID,
+			ObjectName: objectName,
+			ObjectData: "some data for that object",
+		}
+		eInput.Context = make(map[string]string)
+		eInput.Context["appid"] = appID // appid Added As It Is Mandatory
+		eInput.Context["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn"] = upn
+
+		// Start timer
+		defer timeTrack(time.Now())
+
+		fmt.Println("*** CreateObject request ***")
+		eOutput, err := vaultClient.CreateOrEditObjectWithContext(ctx, eInput)
+		if err != nil {
+			fmt.Println("CreateObject request failed:", err.Error())
+			os.Exit(1)
+		}
+
+		if eOutput.Success {
+			fmt.Println("CreateObject result: Success=True")
+		} else {
+			fmt.Println("CreateObject result: Strange behavior as no error was raised but Success=False")
+		}
+
+		fmt.Printf("CreateObject result.ExternalId : %v\n", eOutput.ExternalId)
+	}
+
+	fmt.Println("*** Get Object by Name request ***")
+	getObjectInput := &kms.GetObjectByNameInput{
+		Name: objectName,
+	}
+
+	getObjectOutput, err := vaultClient.GetObjecByNameWithContext(ctx, getObjectInput)
+	if err != nil {
+		fmt.Println("GetKeyByName request failed:", err.Error())
+		os.Exit(1)
+	}
+
+	fmt.Println("objectOutput.Result.Object.Name : ", getObjectOutput.Result.Object.Name)
+	fmt.Println("objectOutput.Result.Object.ExternalId : ", getObjectOutput.Result.Object.ExternalId)
+	fmt.Println("objectOutput.Result.Object.Id : ", getObjectOutput.Result.Object.Id)
+	fmt.Println("objectOutput.Result.Object.ObjectData : ", getObjectOutput.Result.Object.ObjectData)
+
+	// Get Object by Id
+	fmt.Println("*** Get Object by ID request ***")
+	getObjectByIdInput := &kms.GetObjectByIdInput{
+		ExternalID: getObjectOutput.Result.Object.ExternalId,
+	}
+
+	objectByIdOutput, err := vaultClient.GetObjecByIdWithContext(ctx, getObjectByIdInput)
+	if err != nil {
+		fmt.Println("GetObjectById request failed:", err.Error())
+	} else {
+		fmt.Println("objectByIdOutput.Result.Object.Name : ", objectByIdOutput.Result.Object.Name)
+		fmt.Println("objectByIdOutput.Result.Object.ObjectData : ", objectByIdOutput.Result.Object.ObjectData)
+	}
+}
+
+// A function to debug the Cockpit behavior
+// As a GetKeyByNameWithContext after a GetObjecByNameWithContext does have some latency when writing the activity log
+// Note: a solution has been found, but the latency was not explained yet -> keep this code for further tests
+func testGetObjectAndGetKeyByName(vaultClient *kms.KMS) {
+	// Securosys
+	// objectName := "fab-object-test-primus-vault-keytype-dataobject" // an object
+	objectName := "fab_aes_128_hsm_securosys" // a key
+
+	timeOutValue := time.Duration(time.Millisecond * 30000)
+
+	ctx, cancel := context.WithTimeout(context.Background(), timeOutValue)
+	defer cancel()
+
+	fmt.Println("*** Get Object by Name request ***")
+	getObjectInput := &kms.GetObjectByNameInput{
+		Name: objectName,
+	}
+
+	// Note: getObjectByName returns an error 500 if no object found
+	// -> go on with the search
+	getObjectOutput, err := vaultClient.GetObjecByNameWithContext(ctx, getObjectInput)
+	if err != nil {
+		fmt.Println("GetKeyByName request failed:", err.Error())
+		// os.Exit(1)
+	} else {
+		fmt.Println("objectOutput.Result.Object.Name : ", getObjectOutput.Result.Object.Name)
+		fmt.Println("objectOutput.Result.Object.ExternalId : ", getObjectOutput.Result.Object.ExternalId)
+		fmt.Println("objectOutput.Result.Object.Id : ", getObjectOutput.Result.Object.Id)
+		fmt.Println("objectOutput.Result.Object.ObjectData : ", getObjectOutput.Result.Object.ObjectData)
+
+		fmt.Println("*** Get Object by Id request ***")
+		getObjectIdInput := &kms.GetObjectByIdInput{
+			ExternalID: getObjectOutput.Result.Object.ExternalId,
+		}
+
+		getObjectIdOutput, err := vaultClient.GetObjecByIdWithContext(ctx, getObjectIdInput)
+		if err != nil {
+			fmt.Println("GetKeyByName request failed:", err.Error())
+			// os.Exit(1)
+		} else {
+			fmt.Println("objectOutput.Result.Object.Name : ", getObjectIdOutput.Result.Object.Name)
+			fmt.Println("objectOutput.Result.Object.ExternalId : ", getObjectIdOutput.Result.Object.ExternalId)
+			fmt.Println("objectOutput.Result.Object.Id : ", getObjectIdOutput.Result.Object.Id)
+			fmt.Println("objectOutput.Result.Object.ObjectData : ", getObjectIdOutput.Result.Object.ObjectData)
+		}
+	}
+
+	fmt.Println("*** FIRST GetKeyByName request ***")
+	// GetKeyByName to get the key ID for further key deletion
+	// Note: that keyId is different from the externalKeyId returned by CreateKey
+	getKeyInput := &kms.GetKeyByNameInput{
+		Name: objectName,
+	}
+
+	ctx2, cancel := context.WithTimeout(context.Background(), timeOutValue)
+	defer cancel()
+
+	// Note: getObjectByName returns an error 500 if no object found
+	// -> go on with the search
+	getKeyOutput, err := vaultClient.GetKeyByNameWithContext(ctx2, getKeyInput)
+	if err != nil {
+		fmt.Println("GetKeyByName request failed:", err.Error())
+		// os.Exit(1)
+	} else {
+		fmt.Println("keyOutput.Result.Key.Name : ", getKeyOutput.Result.Key.Name)
+		fmt.Println("keyOutput.Result.Key.ExternalId : ", getKeyOutput.Result.Key.ExternalId)
+		fmt.Println("keyOutput.Result.Key.Id : ", getKeyOutput.Result.Key.Id)
+
+		fmt.Println("*** Get Key by Id request ***")
+		getKeyIdInput := &kms.GetKeyIdInput{
+			ExternalID: getKeyOutput.Result.Key.ExternalId,
+		}
+
+		getKeyIdOutput, err := vaultClient.GetKeyIdWithContext(ctx, getKeyIdInput)
+		if err != nil {
+			fmt.Println("GetKeyByName request failed:", err.Error())
+		} else {
+			fmt.Println("getKeyIdOutput.Result.Key.Name : ", getKeyIdOutput.Result.Key.Name)
+			fmt.Println("getKeyIdOutput.Result.Key.ExternalId : ", getKeyIdOutput.Result.Key.ExternalId)
+			fmt.Println("getKeyIdOutput.Result.Key.Id : ", getKeyIdOutput.Result.Key.Id)
 		}
 	}
 }

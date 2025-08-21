@@ -24,15 +24,17 @@ import (
 
 const (
 	// Routes
-	encryptRoute        = "/api/services/app/Keys/CreateEncryptRequest"
-	decryptRoute        = "/api/services/app/Keys/CreateDecryptRequest"
-	getKeyByNameRoute   = "/api/services/app/Keys/GetKeyByName"
-	getKeyByIdRoute     = "/api/services/app/Keys/GetKeyId"
-	createKeyRoute      = "/api/services/app/Keys/CreateKeyRequest"
-	deleteKeyRoute      = "/api/services/app/Keys/Delete"
-	csrImportRoute      = "/api/services/app/CertificateRequests/ImportCertificateCSR"
-	csrStatusRoute      = "/api/services/app/CertificateRequests/CertificateRequestStatus"
-	getSignatureCARoute = "/api/services/app/SCEP/GetSignatureCAForScepServer"
+	encryptRoute            = "/api/services/app/Keys/CreateEncryptRequest"
+	decryptRoute            = "/api/services/app/Keys/CreateDecryptRequest"
+	getKeyByNameRoute       = "/api/services/app/Keys/GetKeyByName"
+	getKeyByIdRoute         = "/api/services/app/Keys/GetKeyId"
+	createKeyRoute          = "/api/services/app/Keys/CreateKeyRequest"
+	deleteKeyRoute          = "/api/services/app/Keys/Delete"
+	csrImportRoute          = "/api/services/app/CertificateRequests/ImportCertificateCSR"
+	csrStatusRoute          = "/api/services/app/CertificateRequests/CertificateRequestStatus"
+	getSignatureCARoute     = "/api/services/app/SCEP/GetSignatureCAForScepServer"
+	createOrEditObjectRoute = "/api/services/app/pkcs11/CreateOrEditObject"
+	getObjectByNameRoute    = "/api/services/app/pkcs11/GetObjectByName"
 
 	oauthGetTokenURL = "/connect/token"
 	// Constants for tests
@@ -273,7 +275,7 @@ func mockGetKeyById(keyId string) ([]byte, error) {
 	return reply.Bytes(), err
 }
 
-// The cockpit currently sends a http error 500 when the scep App is not found
+// The cockpit currently sends a http error 500 when the SCEP/EST App is not found
 func mockGetSignatureCA(scepExternalId string) ([]byte, error) {
 	var output GetSignatureCAOutput
 
@@ -282,6 +284,47 @@ func mockGetSignatureCA(scepExternalId string) ([]byte, error) {
 		output = GetSignatureCAOutput{
 			Success: true,
 			Result:  "dummyValueInsteadOfCertificatesChain",
+		}
+	} else {
+		return nil, errors.New("Server Internal error")
+	}
+
+	reply := &bytes.Buffer{}
+	err := json.NewEncoder(reply).Encode(output)
+	return reply.Bytes(), err
+}
+
+// mockCreateKey() simulates a CreateKey operation
+// Success if ObjectName != existingName (can not create an object with an existing name)
+func mockCreateOrEditObject(body []byte) ([]byte, error) {
+	var jsonData CreateOrEditObjectInput
+
+	if err := json.NewDecoder(bytes.NewReader(body)).Decode(&jsonData); err != nil {
+		return nil, err
+	}
+
+	if jsonData.ObjectName == existingName {
+		return nil, errors.New("Server Internal error")
+	}
+
+	output := CreateObjectOutput{
+		Success:    true,
+		ExternalId: existingGuidId,
+	}
+
+	reply := &bytes.Buffer{}
+	err := json.NewEncoder(reply).Encode(output)
+	return reply.Bytes(), err
+}
+
+// mockGetObjectByName
+// The cockpit currently sends a http error 500 when an object is not found
+func mockGetObjectByName(name string) ([]byte, error) {
+	var output GetObjectOutput
+
+	if name == existingName {
+		output = GetObjectOutput{
+			Success: true,
 		}
 	} else {
 		return nil, errors.New("Server Internal error")
@@ -390,7 +433,7 @@ func newClientWithStandardMockServer(t *testing.T) (*KMS, *httptest.Server) {
 
 			if body, err = mockCreateKey(payload); err != nil {
 				// The cockpit returns a 500 when create key failed
-				http.Error(w, "Internal Server error - expected when key not found", http.StatusInternalServerError)
+				http.Error(w, "Internal Server error - expected when key not be created", http.StatusInternalServerError)
 			}
 		case deleteKeyRoute:
 			if payload, err = ioutil.ReadAll(r.Body); err != nil {
@@ -432,7 +475,7 @@ func newClientWithStandardMockServer(t *testing.T) (*KMS, *httptest.Server) {
 			// Get query with "scepExternalId" parameter
 			query := r.URL.Query()
 			if body, err = mockGetSignatureCA(query.Get("scepExternalId")); err != nil {
-				// The cockpit returns a 500 when the scep App is not found
+				// The cockpit returns a 500 when the SCEP/EST App is not found
 				http.Error(w, "Internal Server error - An internal error occurred during your request!", http.StatusInternalServerError)
 			}
 		case csrImportRoute:
@@ -457,6 +500,23 @@ func newClientWithStandardMockServer(t *testing.T) (*KMS, *httptest.Server) {
 			if body, err = mockCSRStatus(payload); err != nil {
 				http.Error(w, "Internal Server error - Unexpected error", http.StatusInternalServerError)
 			}
+		case createOrEditObjectRoute:
+			if payload, err = ioutil.ReadAll(r.Body); err != nil {
+				t.Fail()
+			}
+
+			if body, err = mockCreateOrEditObject(payload); err != nil {
+				// The cockpit returns a 500 when create key failed
+				http.Error(w, "Internal Server error - expected when object can not be created or edited", http.StatusInternalServerError)
+			}
+		case getObjectByNameRoute:
+			// Get query with "name" parameter
+			query := r.URL.Query()
+			if body, err = mockGetObjectByName(query.Get("name")); err != nil {
+				// The cockpit returns a 500 when the key is not found
+				// This might be a bug, but it is the current behavior
+				http.Error(w, "Internal Server error - expected when object not found", http.StatusInternalServerError)
+			}
 		default:
 			t.Fail()
 		}
@@ -466,16 +526,18 @@ func newClientWithStandardMockServer(t *testing.T) (*KMS, *httptest.Server) {
 	}))
 
 	endpoints := Endpoints{
-		BaseURL:             mockServer.URL,
-		EncryptRoute:        encryptRoute,
-		DecryptRoute:        decryptRoute,
-		GetKeyByNameRoute:   getKeyByNameRoute,
-		GetKeyIdRoute:       getKeyByIdRoute,
-		CreateKeyRoute:      createKeyRoute,
-		DeleteKeyRoute:      deleteKeyRoute,
-		CSRImportRoute:      csrImportRoute,
-		CSRStatusRoute:      csrStatusRoute,
-		GetSignatureCARoute: getSignatureCARoute,
+		BaseURL:                 mockServer.URL,
+		EncryptRoute:            encryptRoute,
+		DecryptRoute:            decryptRoute,
+		GetKeyByNameRoute:       getKeyByNameRoute,
+		GetKeyIdRoute:           getKeyByIdRoute,
+		CreateKeyRoute:          createKeyRoute,
+		DeleteKeyRoute:          deleteKeyRoute,
+		CSRImportRoute:          csrImportRoute,
+		CSRStatusRoute:          csrStatusRoute,
+		GetSignatureCARoute:     getSignatureCARoute,
+		CreateOrEditObjectRoute: createOrEditObjectRoute,
+		GetObjectByNameRoute:    getObjectByNameRoute,
 	}
 
 	credentials := credentials.Config{
@@ -1002,5 +1064,80 @@ func validateErrorAndSuccess(t *testing.T, wantErr bool, success bool, err error
 		if success != true {
 			t.Error("output.Success == false, but true expected")
 		}
+	}
+}
+
+// Create Object with an already existing name will fail
+func TestCreateObject(t *testing.T) {
+	testCases := []struct {
+		name    string
+		config  map[string]string
+		wantErr bool
+	}{
+		{name: "Correct object",
+			config: map[string]string{
+				"object_name": nonexistingName,
+			},
+			wantErr: false,
+		},
+		{name: "Wrong object",
+			config: map[string]string{
+				"object_name": existingName,
+			},
+			wantErr: true,
+		},
+	}
+
+	kmsClient, mockServer := newClientWithStandardMockServer(t)
+	defer mockServer.Close()
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			eInput := &CreateOrEditObjectInput{
+				VaultID:    "1",
+				ObjectName: testCase.config["object_name"],
+				ObjectData: "some data for that object",
+			}
+
+			eOutput, err := kmsClient.CreateOrEditObject(eInput)
+			validateErrorAndSuccess(t, testCase.wantErr, eOutput.Success, err)
+		})
+	}
+}
+
+// mockGetObjectByName() of newClientWithStandardMockServer() relies on the predefined names to return a found or not found object
+func TestGetObjectByName(t *testing.T) {
+	testCases := []struct {
+		name    string
+		config  map[string]string
+		wantErr bool
+	}{
+		{name: "Existing object",
+			config: map[string]string{
+				"object_name": existingName,
+			},
+			wantErr: false,
+		},
+		{name: "Nonexisting object",
+			config: map[string]string{
+				"object_name": nonexistingName,
+			},
+			wantErr: true, // Object not found expected - The cockpit currently triggers an error 500 when object not found
+		},
+	}
+
+	kmsClient, mockServer := newClientWithStandardMockServer(t)
+	defer mockServer.Close()
+
+	for _, testCase := range testCases {
+
+		t.Run(testCase.name, func(t *testing.T) {
+			getObjectInput := &GetObjectByNameInput{
+				Name: testCase.config["object_name"],
+			}
+
+			eOutput, err := kmsClient.GetObjecByName(getObjectInput)
+			validateErrorAndSuccess(t, testCase.wantErr, eOutput.Success, err)
+		})
 	}
 }

@@ -131,7 +131,7 @@ func (c *Client) NewRequest(operation *request.Operation, params interface{}, da
 
 }
 
-// send a request, and if 401 update the token and send once again
+// send a request, and if 401, then update the token and send once again
 // To send the request a second time, it must be cloned
 // The result will be stored in the req.Response (also referenced in 'out' variable by the caller)
 func (c *Client) SendRequestWithTokenUpdate(req *request.Request) error {
