@@ -65,20 +65,6 @@ func mockDecrypt(body []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	/*
-		maxLen := base64.StdEncoding.DecodedLen(len(jsonData.Payload))
-		b64decoded := make([]byte, maxLen)
-
-		len, err := base64.StdEncoding.Decode(b64decoded, jsonData.Payload)
-		if err != nil {
-			return nil, err
-		}
-
-		if len < maxLen {
-			b64decoded = b64decoded[:len]
-		}
-	*/
-
 	output := DecryptOutput{
 		Success: true,
 		Result: struct {
