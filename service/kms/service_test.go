@@ -701,7 +701,7 @@ func TestEncryptWithTimeout(t *testing.T) {
 				}
 			} else {
 				if err != nil {
-					t.Errorf("Unexpected error: " + err.Error())
+					t.Error("Unexpected error: " + err.Error())
 				} else {
 					assert.Equal(t, string(eInput.Payload), eOutput.Result.EncryptedPayload, "The two plaintexts should be the same.")
 				}
@@ -901,7 +901,7 @@ func TestAuthenticateUser(t *testing.T) {
 				}
 			} else {
 				if err != nil {
-					t.Errorf("Unexpected error: " + err.Error())
+					t.Error("Unexpected error: " + err.Error())
 				}
 			}
 		})
