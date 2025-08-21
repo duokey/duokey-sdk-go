@@ -237,7 +237,7 @@ func (k *KMS) encryptRequest(input *EncryptInput, ctx context.Context) (*Encrypt
 
 // RSA Encryption is performed by the client
 //
-//	The RSA key data is queried from the Cockpit witha getKeyById
+//	The RSA key data is queried from the Cockpit with a getKeyById
 func (k *KMS) encryptRequestRSAByClient(input *EncryptInput, ctx context.Context) (*EncryptOutput, error) {
 	// Request the RSA key information
 	getKeyIdInput := GetKeyIdInput{

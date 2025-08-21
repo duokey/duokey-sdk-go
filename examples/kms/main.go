@@ -14,6 +14,11 @@ import (
 	"github.com/duokey/duokey-sdk-go/service/kms"
 )
 
+/*
+This file contains example code to call different routes
+See the comment of main() for a few more explanations
+*/
+
 var (
 	// Application
 	appID string
@@ -242,9 +247,9 @@ func getConfig() {
 }
 
 /*
-* main() with an encrypt/decrypt example + getKeyID
-* The key is set in the DUOKEY_KEY_ID variable
-*	This code was tested with an RSA or AES key
+* main() with example to call different routes
+* Relying on some environment variables to configure the tests
+* 	For different operations, the key ID is set in the DUOKEY_KEY_ID variable
 * For RSA operations:
 *	Algorithm: "RSA-OAEP-256"
 *		In former versions, was "3", used for Sepior
@@ -268,7 +273,7 @@ func main() {
 		TenantID:       tenantID,
 	}
 
-	// Routes are no more mandatory as parameters
+	// Routes are no more mandatory as parameters in this current sdk version
 	// If not set, default value will be set in NewClient()
 	endpoints := kms.Endpoints{
 		BaseURL:             baseURL,
@@ -284,7 +289,7 @@ func main() {
 		GetSignatureCARoute: getSignatureCA,
 	}
 
-	// Note: a 3 optional parameter allows to set the checkTokenTimeOut in seconds
+	// Note: a 3rd optional parameter allows to set the checkTokenTimeOut in seconds
 	// Example: vaultClient, err := kms.NewClient(credentials, endpoints, 5) -> 5 seconds timeout
 	vaultClient, err := kms.NewClient(credentials, endpoints)
 	if err != nil {
@@ -293,11 +298,9 @@ func main() {
 	}
 
 	// To run testKeysOperations(), adapt the parameters
-	// For Fabian: launch.json, use the parameters "App to try the sdk with the cockpit demo (not test) - works in December 2024"
 	//testCreateKeysOperations(vaultClient)
 	testKeysOperations(vaultClient)
 	// To run testCSROperations(), adapt the parameters
-	// For Fabian: launch.json, use the parameters "App for SCEP (on cockpit-api-test) - from Pargat - August 2024"
 	//testCSROperations(vaultClient)
 	// testAuthenticateUser(): should be done with other credentials than the ones used by this duokey-sdk-go
 	//	But here testing the functionality with the same credentials
@@ -345,8 +348,6 @@ AKLoVJ3cuU9Hghi76qE=`
 
 	// a generated GUID, for tests
 	transactionID := "ac84c56f-80cb-4a88-b970-622156f4920a" // commonName "commonName16092024"
-	// transactionID := "c5bc193b-6974-4908-8158-54b48a4b8759" // commonName "commonName13092024_2"
-	// transactionID := "b6ed1fd5-8871-4d6d-936e-cac1ecefcc2b" // commonName "commonName13092024"
 
 	eInput := &kms.CSRImportInput{
 		CSR: csrPEM,
@@ -375,7 +376,7 @@ AKLoVJ3cuU9Hghi76qE=`
 	// The CommonName and TransactionID should match (same as the pair used for the /ImportCertificateCSR call)
 	fmt.Println("CSR Status request")
 	eInputStatus := &kms.CSRStatusInput{
-		CommonName:    "commonName16092024", // "commonName16092024", "commonName13092024", "commonName13092024_2", "scepclient",
+		CommonName:    "commonName16092024",
 		TransactionID: transactionID,
 	}
 
@@ -700,9 +701,6 @@ func testCreateKeysOperations(vaultClient *kms.KMS) {
 
 func testCreateObjectsOperations(vaultClient *kms.KMS) {
 	createObject := false
-	//objectName := "fab-object-test-software-vault"
-	//objectName := "fab-object-test-software-vault-auditLogDidabled"
-	//objectName := "fab-object-test-primus-vault-keytype-dataobject"
 	objectName := "fab-object-test-software-vault-keytype-dataobject-2"
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Millisecond*100000)) // Fab tmp: increase from 10000 to 50000 to have time debuging
@@ -770,12 +768,8 @@ func testCreateObjectsOperations(vaultClient *kms.KMS) {
 
 // A function to debug the Cockpit behavior
 // As a GetKeyByNameWithContext after a GetObjecByNameWithContext does have some latency when writing the activity log
+// Note: a solution has been found, but the latency was not explained yet -> keep this code for further tests
 func testGetObjectAndGetKeyByName(vaultClient *kms.KMS) {
-	// objectName := "fab-object-test-software-vault"
-	//objectName := "fab-object-test-software-vault-auditLogDidabled"
-	//objectName := "fab-object-test-software-vault-keytype-dataobject-2"
-	//objectExternalId := "87188509-a500-4f53-af88-814ab1b8e3fe"
-	//objectName := "fab-AES-128-test-software-vault-2" // a key
 	// Securosys
 	// objectName := "fab-object-test-primus-vault-keytype-dataobject" // an object
 	objectName := "fab_aes_128_hsm_securosys" // a key
@@ -854,22 +848,4 @@ func testGetObjectAndGetKeyByName(vaultClient *kms.KMS) {
 			fmt.Println("getKeyIdOutput.Result.Key.Id : ", getKeyIdOutput.Result.Key.Id)
 		}
 	}
-
-	// fmt.Println("*** SECOND GetKeyByName request ***")
-	// ctx3, cancel := context.WithTimeout(context.Background(), timeOutValue)
-	// defer cancel()
-
-	// // Note: getObjectByName returns an error 500 if no object found
-	// // -> go on with the search
-	// getKeyOutput, err := vaultClient.GetKeyByNameWithContext(ctx3, getKeyInput)
-	// if err != nil {
-	// 	fmt.Println("GetKeyByName request failed:", err.Error())
-	// 	// os.Exit(1)
-	// } else {
-	// 	fmt.Println("keyOutput.Result.Key.Name : ", getKeyOutput.Result.Key.Name)
-	// 	fmt.Println("keyOutput.Result.Key.ExternalId : ", getKeyOutput.Result.Key.ExternalId)
-	// 	fmt.Println("keyOutput.Result.Key.Id : ", getKeyOutput.Result.Key.Id)
-	// 	fmt.Println("keyOutput.Result.Key.Comment : ", getKeyOutput.Result.Key.Comment)
-	// }
-
 }
