@@ -611,6 +611,7 @@ const opCSRImport = "CSRImport"
 //
 // RequestId is a transactionID received from a SCEP client for instance
 // 		and that should be identical for the CSR upload + the CSR status operation
+// 		To be noted that transactionID is no more mandatory for the EST current POC implementation
 
 type Context struct {
 	TransactionID string `json:"transactionid"`
@@ -712,7 +713,7 @@ func (k *KMS) csrStatusRequest(input *CSRStatusInput) (req *request.Request, out
 	return
 }
 
-// Scep Get Signature CA
+// SCEP/EST Get Signature CA
 const opGetSignatureCA = "GetSignatureCA"
 
 type GetSignatureCAInput struct {

@@ -275,7 +275,7 @@ func mockGetKeyById(keyId string) ([]byte, error) {
 	return reply.Bytes(), err
 }
 
-// The cockpit currently sends a http error 500 when the scep App is not found
+// The cockpit currently sends a http error 500 when the SCEP/EST App is not found
 func mockGetSignatureCA(scepExternalId string) ([]byte, error) {
 	var output GetSignatureCAOutput
 
@@ -475,7 +475,7 @@ func newClientWithStandardMockServer(t *testing.T) (*KMS, *httptest.Server) {
 			// Get query with "scepExternalId" parameter
 			query := r.URL.Query()
 			if body, err = mockGetSignatureCA(query.Get("scepExternalId")); err != nil {
-				// The cockpit returns a 500 when the scep App is not found
+				// The cockpit returns a 500 when the SCEP/EST App is not found
 				http.Error(w, "Internal Server error - An internal error occurred during your request!", http.StatusInternalServerError)
 			}
 		case csrImportRoute:

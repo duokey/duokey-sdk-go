@@ -45,7 +45,7 @@ var (
 	getKeyIdRoute     string
 	getKeyByNameRoute string
 
-	// CSR + SCEP
+	// CSR + SCEP/EST
 	csrImportRoute string
 	csrStatusRoute string
 	getSignatureCA string
@@ -392,7 +392,7 @@ AKLoVJ3cuU9Hghi76qE=`
 	}
 }
 
-// Testing the get scep signature CA from cockpit
+// Testing the get SCEP/EST signature CA from cockpit
 func testGetSignatureCA(vaultClient *kms.KMS) {
 
 	eInput := &kms.GetSignatureCAInput{
