@@ -140,8 +140,9 @@ func mockCreateKey(body []byte) ([]byte, error) {
 		return nil, errors.New("Server Internal error")
 	}
 
-	output := SuccessOutput{
-		Success: true,
+	output := CreateKeyOutput{
+		Success:    true,
+		ExternalId: existingGuidId,
 	}
 
 	reply := &bytes.Buffer{}
