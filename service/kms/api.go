@@ -760,11 +760,12 @@ func (k *KMS) getSignatureCARequest(input *GetSignatureCAInput) (req *request.Re
 	return
 }
 
-// Create Key
+// Create Object
 const opCreateOrEditObject = "CreateOrEditObject"
 
-// TODO add Id or ExernalId for edition
-// Description: currently hard-coded by the cockpit
+// CreateOrEditObject currently only handles creation, not edition
+// Description: currently hard-coded in/by the cockpit
+// For further versions, the object's ExternalId will be stored for edition
 type CreateOrEditObjectInput struct {
 	VaultID    string            `json:"vaultid" validate:"nonzero"`
 	Context    map[string]string `json:"context,omitempty"`
@@ -777,7 +778,7 @@ type CreateObjectOutput struct {
 	ExternalId string `json:"result"`
 }
 
-// CreateKey API operation for DuoKey
+// CreateOrEditObject API operation for DuoKey
 func (k *KMS) CreateOrEditObject(input *CreateOrEditObjectInput) (*CreateObjectOutput, error) {
 
 	req, out := k.createOrEditObjectRequest(input)
@@ -785,7 +786,7 @@ func (k *KMS) CreateOrEditObject(input *CreateOrEditObjectInput) (*CreateObjectO
 	return out, k.SendRequestWithTokenUpdate(req)
 }
 
-// CreateKeyWithContext is the same operation as CreateKey. It is however possible
+// CreateOrEditObjectWithContext is the same operation as CreateOrEditObject. It is however possible
 // to pass a non-nil context.
 func (k *KMS) CreateOrEditObjectWithContext(ctx context.Context, input *CreateOrEditObjectInput) (*CreateObjectOutput, error) {
 
@@ -826,7 +827,7 @@ func (k *KMS) createOrEditObjectRequest(input *CreateOrEditObjectInput) (req *re
 
 const opGetObjectByName = "opGetObjectByName"
 
-// GetObjectByNameInput retrives key information.
+// GetObjectByNameInput retrieves object information.
 type GetObjectByNameInput struct {
 	Name string `schema:"name" url:"name"`
 }
@@ -860,7 +861,7 @@ func (k *KMS) GetObjecByName(input *GetObjectByNameInput) (*GetObjectOutput, err
 	return out, k.SendRequestWithTokenUpdate(req)
 }
 
-// GetObjecByNameWithContext is the same operation as GetObjecByNameWithContext. It is however possible
+// GetObjecByNameWithContext is the same operation as GetObjecByName. It is however possible
 // to pass a non-nil context.
 func (k *KMS) GetObjecByNameWithContext(ctx context.Context, input *GetObjectByNameInput) (*GetObjectOutput, error) {
 
@@ -899,7 +900,7 @@ type GetObjectByIdInput struct {
 	ExternalID string `schema:"externalId" url:"externalId"`
 }
 
-// Get Object by Name
+// Get Object by Id
 func (k *KMS) GetObjecById(input *GetObjectByIdInput) (*GetObjectOutput, error) {
 
 	req, out := k.getObjectByIdRequest(input)
