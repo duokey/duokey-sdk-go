@@ -23,6 +23,7 @@ type Endpoints struct {
 	ImportRoute             string `mapstructure:"import-route"`
 	GetKeyIdRoute           string `mapstructure:"getkeyid-route"`
 	GetKeyByNameRoute       string `mapstructure:"getkeybyname-route"`
+	GetAllKeysRoute         string `mapstructure:"getallkeys-route"`
 	CSRImportRoute          string `mapstructure:"csrimport-route"`
 	CSRStatusRoute          string `mapstructure:"csrstatus-route"`
 	GetSignatureCARoute     string `mapstructure:"getsignatureca-route"`
@@ -77,6 +78,9 @@ func NewClientWithLogger(credentials credentials.Config, endpoints Endpoints, lo
 	}
 	if endpoints.GetKeyByNameRoute == "" {
 		endpoints.GetKeyByNameRoute = "/api/services/app/Keys/GetKeyByName"
+	}
+	if endpoints.GetAllKeysRoute == "" {
+		endpoints.GetAllKeysRoute = "/api/services/app/Keys/GetAll"
 	}
 	if endpoints.CSRImportRoute == "" {
 		endpoints.CSRImportRoute = "/api/services/app/CertificateRequests/ImportCertificateCSR"

@@ -28,6 +28,7 @@ const (
 	decryptRoute            = "/api/services/app/Keys/CreateDecryptRequest"
 	getKeyByNameRoute       = "/api/services/app/Keys/GetKeyByName"
 	getKeyByIdRoute         = "/api/services/app/Keys/GetKeyId"
+	getAllKeysRoute         = "/api/services/app/Keys/GetAll"
 	createKeyRoute          = "/api/services/app/Keys/CreateKeyRequest"
 	deleteKeyRoute          = "/api/services/app/Keys/Delete"
 	csrImportRoute          = "/api/services/app/CertificateRequests/ImportCertificateCSR"
@@ -261,6 +262,70 @@ func mockGetKeyById(keyId string) ([]byte, error) {
 	return reply.Bytes(), err
 }
 
+// mockGetAllKeys returns a list of keys for a given vault
+// If vaultId matches existingGuidId, returns 2 keys
+// Otherwise returns empty list
+func mockGetAllKeys(vaultId string) ([]byte, error) {
+	var output GetAllKeysOutput
+
+	if vaultId == existingGuidId {
+		// Return 2 test keys
+		output = GetAllKeysOutput{
+			Success: true,
+			Result: struct {
+				Items      []GetKeyForViewDto `json:"items"`
+				TotalCount int                `json:"totalCount"`
+			}{
+				Items: []GetKeyForViewDto{
+					{
+						Key: KeySummaryDto{
+							Name:       "test-key-RSA-2048",
+							ExternalId: existingGuidId,
+							Id:         existingGuidId,
+							Type:       "RSA 2048",
+							IsEncrypt:  false,
+							IsDecrypt:  true,
+							VaultId:    vaultId,
+						},
+						VaultName: "Test Vault",
+						VaultType: 1,
+					},
+					{
+						Key: KeySummaryDto{
+							Name:       "test-key-AES-256",
+							ExternalId: "a1b2c3d4-5678-9abc-def0-123456789abc",
+							Id:         "a1b2c3d4-5678-9abc-def0-123456789abc",
+							Type:       "AES 256",
+							IsEncrypt:  true,
+							IsDecrypt:  true,
+							VaultId:    vaultId,
+						},
+						VaultName: "Test Vault",
+						VaultType: 1,
+					},
+				},
+				TotalCount: 2,
+			},
+		}
+	} else {
+		// Return empty list for other vault IDs
+		output = GetAllKeysOutput{
+			Success: true,
+			Result: struct {
+				Items      []GetKeyForViewDto `json:"items"`
+				TotalCount int                `json:"totalCount"`
+			}{
+				Items:      []GetKeyForViewDto{},
+				TotalCount: 0,
+			},
+		}
+	}
+
+	reply := &bytes.Buffer{}
+	err := json.NewEncoder(reply).Encode(output)
+	return reply.Bytes(), err
+}
+
 // The cockpit currently sends a http error 500 when the SCEP/EST App is not found
 func mockGetSignatureCA(scepExternalId string) ([]byte, error) {
 	var output GetSignatureCAOutput
@@ -445,6 +510,12 @@ func newClientWithStandardMockServer(t *testing.T) (*KMS, *httptest.Server) {
 				// The cockpit returns a 500 when the key is not found
 				http.Error(w, "Internal Server error - expected when key not found", http.StatusInternalServerError)
 			}
+		case getAllKeysRoute:
+			// Get query with "vaultId" parameter
+			query := r.URL.Query()
+			if body, err = mockGetAllKeys(query.Get("VaultId")); err != nil {
+				http.Error(w, "Internal Server error - unexpected error", http.StatusInternalServerError)
+			}
 		case oauthGetTokenURL:
 			// The cockpit returns a 400 if the user/pwd do not match
 			err := r.ParseForm()
@@ -517,6 +588,7 @@ func newClientWithStandardMockServer(t *testing.T) (*KMS, *httptest.Server) {
 		DecryptRoute:            decryptRoute,
 		GetKeyByNameRoute:       getKeyByNameRoute,
 		GetKeyIdRoute:           getKeyByIdRoute,
+		GetAllKeysRoute:         getAllKeysRoute,
 		CreateKeyRoute:          createKeyRoute,
 		DeleteKeyRoute:          deleteKeyRoute,
 		CSRImportRoute:          csrImportRoute,
@@ -1124,6 +1196,60 @@ func TestGetObjectByName(t *testing.T) {
 
 			eOutput, err := kmsClient.GetObjecByName(getObjectInput)
 			validateErrorAndSuccess(t, testCase.wantErr, eOutput.Success, err)
+		})
+	}
+}
+
+// Test GetAllKeys functionality
+func TestGetAllKeys(t *testing.T) {
+	testCases := []struct {
+		name           string
+		vaultId        string
+		wantErr        bool
+		expectedCount  int
+	}{
+		{
+			name:          "Existing vault with keys",
+			vaultId:       existingGuidId,
+			wantErr:       false,
+			expectedCount: 2,
+		},
+		{
+			name:          "Non-existing vault",
+			vaultId:       nonexistingGuidId,
+			wantErr:       false,
+			expectedCount: 0,
+		},
+	}
+
+	kmsClient, mockServer := newClientWithStandardMockServer(t)
+	defer mockServer.Close()
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			input := &GetAllKeysInput{
+				VaultId:        testCase.vaultId,
+				MaxResultCount: 10,
+			}
+
+			output, err := kmsClient.GetAllKeys(input)
+
+			if testCase.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.True(t, output.Success)
+				assert.Equal(t, testCase.expectedCount, output.Result.TotalCount)
+				assert.Equal(t, testCase.expectedCount, len(output.Result.Items))
+				
+				// If we expect keys, verify first key details
+				if testCase.expectedCount > 0 {
+					firstKey := output.Result.Items[0].Key
+					assert.NotEmpty(t, firstKey.Name)
+					assert.NotEmpty(t, firstKey.ExternalId)
+					assert.Equal(t, testCase.vaultId, firstKey.VaultId)
+				}
+			}
 		})
 	}
 }
