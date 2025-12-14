@@ -36,6 +36,7 @@ const (
 	getSignatureCARoute     = "/api/services/app/SCEP/GetSignatureCAForScepServer"
 	createOrEditObjectRoute = "/api/services/app/pkcs11/CreateOrEditObject"
 	getObjectByNameRoute    = "/api/services/app/pkcs11/GetObjectByName"
+	deleteObjectRoute       = "/api/services/app/pkcs11/DeleteObject"
 
 	oauthGetTokenURL = "/connect/token"
 	// Constants for tests
@@ -386,6 +387,22 @@ func mockGetObjectByName(name string) ([]byte, error) {
 	return reply.Bytes(), err
 }
 
+// mockDeleteObject
+// The cockpit currently sends a http error 500 when an object is not found
+func mockDeleteObject(externalId string) ([]byte, error) {
+	if externalId != existingGuidId {
+		return nil, errors.New("Server Internal error - object not found")
+	}
+
+	output := SuccessOutput{
+		Success: true,
+	}
+
+	reply := &bytes.Buffer{}
+	err := json.NewEncoder(reply).Encode(output)
+	return reply.Bytes(), err
+}
+
 func newClientWithMockServer(credentials credentials.Config, endpoints Endpoints, httpClient *http.Client) *KMS {
 	// Prepare a dummy oauth2 config + token
 	// This is enough as currently the following checks are done:
@@ -574,6 +591,13 @@ func newClientWithStandardMockServer(t *testing.T) (*KMS, *httptest.Server) {
 				// This might be a bug, but it is the current behavior
 				http.Error(w, "Internal Server error - expected when object not found", http.StatusInternalServerError)
 			}
+		case deleteObjectRoute:
+			// Get query with "externalId" parameter
+			query := r.URL.Query()
+			if body, err = mockDeleteObject(query.Get("externalId")); err != nil {
+				// The cockpit returns a 500 when the object is not found
+				http.Error(w, "Internal Server error - expected when object not found", http.StatusInternalServerError)
+			}
 		default:
 			t.Fail()
 		}
@@ -596,6 +620,7 @@ func newClientWithStandardMockServer(t *testing.T) (*KMS, *httptest.Server) {
 		GetSignatureCARoute:     getSignatureCARoute,
 		CreateOrEditObjectRoute: createOrEditObjectRoute,
 		GetObjectByNameRoute:    getObjectByNameRoute,
+		DeleteObjectRoute:       deleteObjectRoute,
 	}
 
 	credentials := credentials.Config{
@@ -1196,6 +1221,42 @@ func TestGetObjectByName(t *testing.T) {
 
 			eOutput, err := kmsClient.GetObjecByName(getObjectInput)
 			validateErrorAndSuccess(t, testCase.wantErr, eOutput.Success, err)
+		})
+	}
+}
+
+// mockDeleteObject() of newClientWithStandardMockServer() relies on the predefined GUID IDs to return success or error
+func TestDeleteObject(t *testing.T) {
+	testCases := []struct {
+		name    string
+		config  map[string]string
+		wantErr bool
+	}{
+		{name: "Existing object",
+			config: map[string]string{
+				"object_id": existingGuidId,
+			},
+			wantErr: false,
+		},
+		{name: "Non-existing object",
+			config: map[string]string{
+				"object_id": nonexistingGuidId,
+			},
+			wantErr: true, // Object not found expected - The cockpit returns an error 500 when object not found
+		},
+	}
+
+	kmsClient, mockServer := newClientWithStandardMockServer(t)
+	defer mockServer.Close()
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			deleteObjectInput := &DeleteObjectInput{
+				ExternalID: testCase.config["object_id"],
+			}
+
+			output, err := kmsClient.DeleteObject(deleteObjectInput)
+			validateErrorAndSuccess(t, testCase.wantErr, output.Success, err)
 		})
 	}
 }

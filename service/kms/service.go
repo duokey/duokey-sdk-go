@@ -30,6 +30,7 @@ type Endpoints struct {
 	CreateOrEditObjectRoute string `mapstructure:"createoreditobject-route"`
 	GetObjectByNameRoute    string `mapstructure:"getobjectbyname-route"`
 	GetObjectByIdRoute      string `mapstructure:"getobjectbyid-route"`
+	DeleteObjectRoute       string `mapstructure:"deleteobject-route"`
 }
 
 // New checks the credentials and returns a KMS client with the default logger.
@@ -99,6 +100,9 @@ func NewClientWithLogger(credentials credentials.Config, endpoints Endpoints, lo
 	}
 	if endpoints.GetObjectByIdRoute == "" {
 		endpoints.GetObjectByIdRoute = "/api/services/app/pkcs11/GetObjectById"
+	}
+	if endpoints.DeleteObjectRoute == "" {
+		endpoints.DeleteObjectRoute = "/api/services/app/pkcs11/DeleteObject"
 	}
 	return &KMS{Client: client, Endpoints: &endpoints}, nil
 }

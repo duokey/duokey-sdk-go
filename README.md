@@ -20,6 +20,33 @@ go get github.com/duokey/duokey-sdk-go
 ### Dependencies
 
 The metadata of the SDK dependencies can be found in the Go module file [`go.mod`](go.mod).
+
+## Running Tests
+
+The SDK includes comprehensive unit tests to ensure all functionality works correctly. You can run the tests from the root folder of the project using the following commands:
+
+### Run all tests
+```bash
+go test ./...
+```
+
+### Run tests with verbose output
+```bash
+go test -v ./...
+```
+
+### Run tests for a specific package
+```bash
+go test ./service/kms
+```
+
+### Run tests with verbose output for a specific package
+```bash
+go test -v ./service/kms
+```
+
+The tests use mock HTTP servers to simulate the DuoKey Cockpit API, so no actual DuoKey instance is required to run the test suite.
+
 ### Sample CreateEncryptRequest
 ```bash
 {

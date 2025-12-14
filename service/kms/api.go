@@ -941,3 +941,45 @@ func (k *KMS) getObjectByIdRequest(input *GetObjectByIdInput) (req *request.Requ
 
 	return
 }
+
+// Delete Object
+const opDeleteObject = "DeleteObject"
+
+// DeleteObjectInput contains the parameters for deleting an object
+type DeleteObjectInput struct {
+	ExternalID string `schema:"externalId" url:"externalId"`
+}
+
+// DeleteObject deletes an object by its external ID
+func (k *KMS) DeleteObject(input *DeleteObjectInput) (*SuccessOutput, error) {
+	req, out := k.deleteObjectRequest(input)
+	return out, k.SendRequestWithTokenUpdate(req)
+}
+
+// DeleteObjectWithContext is the same operation as DeleteObject with context support
+func (k *KMS) DeleteObjectWithContext(ctx context.Context, input *DeleteObjectInput) (*SuccessOutput, error) {
+	req, out := k.deleteObjectRequest(input)
+	req.SetContext(ctx)
+	return out, k.SendRequestWithTokenUpdate(req)
+}
+
+func (k *KMS) deleteObjectRequest(input *DeleteObjectInput) (req *request.Request, output *SuccessOutput) {
+	queryParams, _ := query.Values(input)
+
+	op := &request.Operation{
+		Name:        opDeleteObject,
+		HTTPMethod:  http.MethodDelete,
+		BaseURL:     k.Endpoints.BaseURL,
+		Route:       k.Endpoints.DeleteObjectRoute,
+		QueryParams: queryParams.Encode(),
+	}
+
+	if input == nil {
+		input = &DeleteObjectInput{}
+	}
+
+	output = &SuccessOutput{}
+	req = k.NewRequest(op, input, output)
+
+	return
+}
