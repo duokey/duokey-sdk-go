@@ -186,6 +186,7 @@ type EncryptInput struct {
 	Payload   []byte            `json:"payload"`
 	Iv        []byte            `json:"iv"`
 	Aad       []byte            `json:"aad"`
+	TagLength *int              `json:"tagLength,omitempty"`
 }
 
 // EncryptOutput contains the deserialized payload returned by the DuoKey server.
