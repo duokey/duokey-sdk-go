@@ -78,21 +78,22 @@ For the expected parameters, see the section here under.
 
 To run the example, define the following environment variables that will be passed as parameter to instanciate the client:
 
-|Environment variable | Description |
-|--- |--- |
-|DUOKEY_APP_ID | The application ID |
-|DUOKEY_UPN | The user principal name |
-|DUOKEY_ISSUER | The named external system that provides identity and API access by issuing an OAuth access token |
-|DUOKEY_CLIENT_ID | The client id for credentials to query the DuoKey API |
-|DUOKEY_CLIENT_SECRET | The client secret for credentials to query the DuoKey API |
-|DUOKEY_VAULT_ID | The vault to use for encryption and decryption |
-|DUOKEY_KEY_ID | The DuoKey key ID to use for encryption and decryption |
-|DUOKEY_HEADER_TENANT_ID | |
-|DUOKEY_TENANT_ID | The tenant id for the DuoKey organization |
-|DUOKEY_USERNAME | The username |
-|DUOKEY_PASSWORD | The password |
-|DUOKEY_SCOPE | The scope of the token |
-|DUOKEY_BASE_URL | The base URL of the DuoKey API |
+| Environment variable | Description                                                | Example/Info |
+|---                |---                                                    |---           |
+| DUOKEY_ISSUER             | The URL of the Cockpit that provides identity and API access by issuing an OAuth access token | https://cockpit-api.mycompany.cloud  |
+| DUOKEY_BASE_URL           | The base URL of the DuoKey API                                  | https://cockpit-api.mycompany.cloud   |
+| DUOKEY_APP_ID             | The Cockpit application's ID                                    | a GUID                     |
+| DUOKEY_CLIENT_ID          | The Cockpit application's generated client Id                   | (see the application page) |
+| DUOKEY_CLIENT_SECRET      | The Cockpit application's generated client secret               | (see the application page) |
+| DUOKEY_USERNAME           | The Cockpit application's generated username                    | (see the application page) |
+| DUOKEY_PASSWORD           | The Cockpit application's generated password                    | (see the application page) |
+| DUOKEY_VAULT_ID           | The Cockpit application's vault Id                              | (see the application page) |
+| DUOKEY_UPN                | Sdk instance name used to identify the logs | a string (a name) |                            |
+| DUOKEY_HEADER_TENANT_ID   | The name of the header field for the tenant Id (set in the http call)   | usually "X-DuoKey-TenantId" |
+| DUOKEY_TENANT_ID          | The Id corresponding to the Cockpit tenant                      | usually a number  |
+| DUOKEY_SCOPE              | The scope of the API - use "default-api" for all functionalities you have in the application | "default-api" |
+|DUOKEY_KEY_ID | The DuoKey key ID to use for encryption and decryption |                     |
+
 
 Optional environment variables - default values are used if not set:
 
